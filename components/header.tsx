@@ -5,14 +5,10 @@ import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Sparkles, Menu, ShoppingCart, User, Search, Heart } from "lucide-react"
 import Link from "next/link"
+import { useCart } from "@/hooks/use-cart"
 
-interface HeaderProps {
-    cartCount?: number;
-}
-
-export function Header({ cartCount = 0 }: HeaderProps) {
-  // Wishlist is local storage usually, so we can't easily SSR it without hydration mismatch or useEffect.
-  // For now, static 0 or client side fetch. I'll leave it as 0.
+export function Header() {
+  const { itemCount } = useCart()
 
   return (
     <>
@@ -65,15 +61,20 @@ export function Header({ cartCount = 0 }: HeaderProps) {
               <Button variant="ghost" size="icon" className="relative hover:bg-pink-50" asChild>
                 <Link href="/wishlist">
                   <Heart className="h-5 w-5 text-gray-600" />
+                  {itemCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-pink-600 text-white text-xs">
+                      {itemCount}
+                    </Badge>
+                  )}
                 </Link>
               </Button>
 
               <Button variant="ghost" size="icon" className="relative hover:bg-pink-50" asChild>
                 <Link href="/cart">
                   <ShoppingCart className="h-5 w-5 text-gray-600" />
-                  {cartCount > 0 && (
+                  {itemCount > 0 && (
                     <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-pink-600 text-white text-xs">
-                      {cartCount}
+                      {itemCount}
                     </Badge>
                   )}
                 </Link>

@@ -1,17 +1,37 @@
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { getFeaturedProducts } from "@/lib/commerce"
+import { supabase } from "@/lib/database"
+
+interface Product {
+  id: string
+  name: string
+  price: number
+  image_url: string | null
+  description: string | null
+  stock_quantity: number
+  colors: string[] | null
+  sizes: string[] | null
+}
+
+async function getFeaturedProducts() {
+  const { data: products, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .eq("is_featured", true)
+    .limit(4)
+
+  if (error) {
+    console.error("Error fetching featured products:", error)
+    return []
+  }
+
+  return products as Product[]
+}
 
 export async function FeaturedProducts() {
-  const products = await getFeaturedProducts();
-
-  // Map products to ProductCard props
-  const mappedProducts = products.map(p => ({
-    ...p,
-    price: p.price.toString(),
-  }));
-
+  const featuredProducts = await getFeaturedProducts()
   return (
     <section className="py-20 px-4 bg-white">
       <div className="container mx-auto max-w-6xl">
@@ -31,12 +51,14 @@ export async function FeaturedProducts() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-          {mappedProducts.length > 0 ? (
-            mappedProducts.map((product) => (
+          {featuredProducts.length > 0 ? (
+            featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))
           ) : (
-            <div className="col-span-full text-center text-gray-500">No products found.</div>
+            <div className="col-span-full text-center py-8">
+              <p className="text-gray-500">Check back soon for our featured bows!</p>
+            </div>
           )}
         </div>
 
