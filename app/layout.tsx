@@ -6,6 +6,8 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Toaster } from "@/components/ui/sonner"
 import { getCart } from "@/lib/cart"
+import { CartProvider } from "@/hooks/use-cart"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -78,7 +80,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-    generator: 'v0.app'
+  generator: 'v0.app'
 }
 
 export default async function RootLayout({
@@ -97,10 +99,18 @@ export default async function RootLayout({
         <meta name="theme-color" content="#ec4899" />
       </head>
       <body className={inter.className}>
-        <Header cartCount={cartCount} />
-        {children}
-        <Footer />
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <CartProvider>
+            <Header />
+            {children}
+            <Footer />
+          </CartProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

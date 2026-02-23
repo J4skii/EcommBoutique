@@ -56,8 +56,6 @@ export function ProductDetail({ product }: ProductDetailProps) {
     : null;
 
   // Update effect if needed, or just derive
-  // If we change color, we might need to reset size if that size isn't available in that color?
-  // For simplicity, let's assume all combos exist or just pick first available.
 
   const currentPrice = selectedVariant
     ? (parseFloat(product.price) + parseFloat(selectedVariant.priceAdjustment || "0")).toFixed(2)

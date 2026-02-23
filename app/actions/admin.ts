@@ -14,7 +14,7 @@ export async function createProduct(formData: FormData) {
   const stockQuantity = parseInt(formData.get('stockQuantity') as string) || 0;
   const isFeatured = formData.get('isFeatured') === 'on';
   const isActive = formData.get('isActive') === 'on';
-  const imageUrls = formData.getAll('imageUrls') as string[]; // Currently only one input named imageUrls
+  const imageUrls = formData.getAll('imageUrls') as string[];
 
   // Variants
   const variantSizes = formData.getAll('variant_size') as string[];

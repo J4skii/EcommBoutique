@@ -20,6 +20,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     notFound()
   }
 
+  // Ensure types match what ProductDetail expects (specifically dates to strings if any, though here we don't use dates in ProductDetail props yet)
+  // Also price is string from Drizzle decimal
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
