@@ -4,6 +4,8 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Toaster } from "@/components/ui/sonner"
+import { getCart } from "@/lib/cart"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -79,11 +81,14 @@ export const metadata: Metadata = {
     generator: 'v0.app'
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const cart = await getCart();
+  const cartCount = cart ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
   return (
     <html lang="en">
       <head>
@@ -92,9 +97,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#ec4899" />
       </head>
       <body className={inter.className}>
-        <Header />
+        <Header cartCount={cartCount} />
         {children}
         <Footer />
+        <Toaster />
       </body>
     </html>
   )
