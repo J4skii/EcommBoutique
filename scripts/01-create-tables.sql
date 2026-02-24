@@ -241,3 +241,16 @@ CREATE TABLE contact_submissions (
   admin_notes TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Function to decrement product stock
+CREATE OR REPLACE FUNCTION decrement_stock(product_uuid UUID, quantity_int INTEGER)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $
+BEGIN
+  UPDATE products
+  SET stock_quantity = stock_quantity - quantity_int,
+      updated_at = NOW()
+  WHERE id = product_uuid;
+END;
+$;

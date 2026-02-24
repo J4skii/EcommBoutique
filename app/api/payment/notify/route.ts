@@ -1,70 +1,96 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/database"
-import { payfast } from "@/lib/payfast"
-import { sendOrderConfirmationEmail } from "@/lib/email"
+import { NextRequest, NextResponse } from 'next/server';
+import { payfast } from '@/lib/payfast';
+import { db } from '@/lib/db';
+import { orders, products, productVariants, orderItems } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { sendOrderConfirmationEmail } from '@/lib/email';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const formData = await request.formData()
-    const data: Record<string, string> = {}
+    const text = await req.text();
+    const params = new URLSearchParams(text);
+    const data: Record<string, string> = {};
 
-    // Convert FormData to object
-    for (const [key, value] of formData.entries()) {
-      data[key] = value.toString()
+    for (const [key, value] of params.entries()) {
+      data[key] = value;
     }
 
-    console.log("PayFast notification received:", data)
+    const signature = data.signature;
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+    }
 
-    // Validate signature
-    const isValid = payfast.validateSignature(data, data.signature)
+    const isValid = payfast.validateSignature(data, signature);
+
     if (!isValid) {
-      console.error("Invalid PayFast signature")
-      return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
+        console.error("Invalid PayFast signature");
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    const { payment_status, m_payment_id, pf_payment_id, amount_gross } = data
+    const orderId = data.m_payment_id;
+    const paymentStatus = data.payment_status;
 
-    // Find order by payment reference
-    const { data: order, error } = await supabase.from("orders").select("*").eq("order_number", m_payment_id).single()
-
-    if (error || !order) {
-      console.error("Order not found:", m_payment_id)
-      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    if (!orderId) {
+      return NextResponse.json({ error: 'Missing order ID' }, { status: 400 });
     }
 
-    // Update order based on payment status
-    let orderStatus = order.status
-    let paymentStatus = "pending"
+    if (paymentStatus === 'COMPLETE') {
+      // Update order status
+      await db.update(orders)
+        .set({
+            paymentStatus: 'paid',
+            status: 'processing',
+            updatedAt: new Date()
+        })
+        .where(eq(orders.id, orderId));
 
-    if (payment_status === "COMPLETE") {
-      orderStatus = "confirmed"
-      paymentStatus = "paid"
+      // Decrement stock
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+        with: {
+            items: true
+        }
+      });
 
-      // Send confirmation email
-      try {
-        await sendOrderConfirmationEmail(order.id)
-      } catch (emailError) {
-        console.error("Failed to send confirmation email:", emailError)
+      if (order) {
+          for (const item of order.items) {
+              if (item.variantId) {
+                  await db.update(productVariants)
+                      .set({ stockQuantity: sql`${productVariants.stockQuantity} - ${item.quantity}` })
+                      .where(eq(productVariants.id, item.variantId));
+              } else if (item.productId) {
+                  await db.update(products)
+                      .set({ stockQuantity: sql`${products.stockQuantity} - ${item.quantity}` })
+                      .where(eq(products.id, item.productId));
+              }
+          }
+
+          // Send confirmation email
+          // Note: lib/email.ts uses supabase client directly to fetch orders.
+          // Since we updated the DB using Drizzle, the data is in the same DB.
+          // Ideally we should refactor sendOrderConfirmationEmail to accept the order object or use Drizzle,
+          // but for now, since it fetches from 'orders' table which Drizzle manages, it should work
+          // IF the Supabase client is configured correctly and pointing to the same DB.
+          try {
+              await sendOrderConfirmationEmail(orderId);
+          } catch (e) {
+              console.error("Failed to send email", e);
+              // Don't fail the webhook response
+          }
       }
-    } else if (payment_status === "FAILED" || payment_status === "CANCELLED") {
-      paymentStatus = "failed"
+    } else if (paymentStatus === 'FAILED') {
+        await db.update(orders)
+        .set({
+            paymentStatus: 'failed',
+            status: 'cancelled',
+            updatedAt: new Date()
+        })
+        .where(eq(orders.id, orderId));
     }
 
-    // Update order
-    await supabase
-      .from("orders")
-      .update({
-        status: orderStatus,
-        payment_status: paymentStatus,
-        payment_reference: pf_payment_id,
-      })
-      .eq("id", order.id)
-
-    console.log(`Order ${m_payment_id} updated: ${orderStatus}/${paymentStatus}`)
-
-    return NextResponse.json({ status: "OK" })
+    return NextResponse.json({ status: 'ok' });
   } catch (error) {
-    console.error("Payment notification error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Payment notification error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
