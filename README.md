@@ -1,4 +1,4 @@
-# Granny's online store
+# EcommBoutique
 
 *Automatically synced with your [v0.app](https://v0.app) deployments*
 
