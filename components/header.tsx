@@ -59,8 +59,10 @@ export function Header({ cartCount = 0 }: HeaderProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-pink-50">
-                <Search className="h-5 w-5 text-gray-600" />
+              <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-pink-50" asChild>
+                <Link href="/search">
+                    <Search className="h-5 w-5 text-gray-600" />
+                </Link>
               </Button>
 
               <Button variant="ghost" size="icon" className="relative hover:bg-pink-50" asChild>
@@ -80,8 +82,10 @@ export function Header({ cartCount = 0 }: HeaderProps) {
                 </Link>
               </Button>
 
-              <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-pink-50">
-                <User className="h-5 w-5 text-gray-600" />
+              <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-pink-50" asChild>
+                <Link href="/account">
+                    <User className="h-5 w-5 text-gray-600" />
+                </Link>
               </Button>
 
               {/* Mobile Menu */}

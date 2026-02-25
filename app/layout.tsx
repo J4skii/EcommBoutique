@@ -106,9 +106,10 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <CartProvider>
-            <Header />
+            <Header cartCount={cartCount} />
             {children}
             <Footer />
+            <Toaster />
           </CartProvider>
         </ThemeProvider>
       </body>

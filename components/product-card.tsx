@@ -7,7 +7,8 @@ import Image from "next/image"
 import { useState } from "react"
 import Link from "next/link"
 import { addToCart } from "@/app/actions/cart"
-import { toast } from "sonner" // Assuming sonner is installed as per package.json
+import { toggleWishlist } from "@/app/actions/wishlist"
+import { toast } from "sonner"
 
 export interface Product {
   id: string
@@ -16,7 +17,6 @@ export interface Product {
   imageUrl: string | null
   description: string | null
   stockQuantity: number
-  // For variants, we might need more info, but for listing display:
   variants?: any[]
 }
 
@@ -26,16 +26,13 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const [isWishlisting, setIsWishlisting] = useState(false)
 
   const handleAddToCart = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent link navigation
+    e.preventDefault();
     e.stopPropagation();
 
-    // If product has variants, we should probably go to details page
     if (product.variants && product.variants.length > 0) {
-        // Redirect logic handled by Link wrapper usually, but here we want to force navigation?
-        // Actually, if we are in a Link, we can't easily redirect programmatically without router.push
-        // But better UX: change button text to "Select Options"
         return;
     }
 
@@ -51,13 +48,30 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   }
 
-  const inStock = product.stockQuantity > 0
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsWishlisting(true)
+      try {
+          const result = await toggleWishlist(product.id)
+          toast.success(result.added ? "Added to wishlist" : "Removed from wishlist")
+      } catch (e: any) {
+          if (e.message.includes("Must be logged in")) {
+              toast.error("Please log in to save items")
+          } else {
+              toast.error("Failed to update wishlist")
+          }
+      } finally {
+          setIsWishlisting(false)
+      }
+  }
 
+  const inStock = product.stockQuantity > 0
   const hasVariants = product.variants && product.variants.length > 0;
 
   return (
     <Link href={`/products/${product.id}`} className="block group">
-      <div className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 h-full flex flex-col">
+      <div className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 h-full flex flex-col relative">
         <div className="relative aspect-square overflow-hidden bg-gray-100">
           {product.imageUrl ? (
             <Image
@@ -69,6 +83,14 @@ export function ProductCard({ product }: ProductCardProps) {
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
           )}
+
+          <button
+            onClick={handleToggleWishlist}
+            disabled={isWishlisting}
+            className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
+          >
+            <Heart className="h-4 w-4 text-gray-400 hover:text-pink-500 transition-colors" />
+          </button>
 
           {!inStock && (
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">

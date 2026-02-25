@@ -163,3 +163,34 @@ export const cartItemsRelations = relations(cartItems, ({ one }) => ({
     references: [productVariants.id],
   }),
 }));
+
+// Wishlist Table
+export const wishlists = pgTable('wishlists', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().unique(), // Linked to Supabase Auth
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const wishlistsRelations = relations(wishlists, ({ many }) => ({
+  items: many(wishlistItems),
+}));
+
+// Wishlist Items Table
+export const wishlistItems = pgTable('wishlist_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wishlistId: uuid('wishlist_id').references(() => wishlists.id, { onDelete: 'cascade' }).notNull(),
+  productId: uuid('product_id').references(() => products.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
+  wishlist: one(wishlists, {
+    fields: [wishlistItems.wishlistId],
+    references: [wishlists.id],
+  }),
+  product: one(products, {
+    fields: [wishlistItems.productId],
+    references: [products.id],
+  }),
+}));
