@@ -9,11 +9,11 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: {
-    default: "Monica's Bow Boutique - Handcrafted Faux Leather Bows | Durban, KZN",
-    template: "%s | Monica's Bow Boutique",
+    default: "Paitons Boutique - Handcrafted Faux Leather Bows | Durban, KZN",
+    template: "%s | Paitons Boutique",
   },
   description:
-    "Beautiful handmade faux leather bows crafted with love by Monica in Durban, KwaZulu-Natal. Each piece is unique and perfect for any occasion. Custom orders available. Free shipping over R300.",
+    "Beautiful handmade faux leather bows crafted with love by Paiton in Durban, KwaZulu-Natal. Each piece is unique and perfect for any occasion. Custom orders available. Free shipping over R300.",
   keywords: [
     "handmade bows",
     "faux leather",
@@ -23,42 +23,42 @@ export const metadata: Metadata = {
     "South Africa",
     "handcrafted",
     "custom bows",
-    "Monica",
+    "Paiton",
     "bow boutique",
     "hair accessories",
     "fashion accessories",
   ],
-  authors: [{ name: "Monica's Bow Boutique" }],
-  creator: "Monica's Bow Boutique",
-  publisher: "Monica's Bow Boutique",
+  authors: [{ name: "Paitons Boutique" }],
+  creator: "Paitons Boutique",
+  publisher: "Paitons Boutique",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://monicasbows.co.za"),
+  metadataBase: new URL("https://paitonsboutique.co.za"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     locale: "en_ZA",
-    url: "https://monicasbows.co.za",
-    title: "Monica's Bow Boutique - Handcrafted Faux Leather Bows",
+    url: "https://paitonsboutique.co.za",
+    title: "Paitons Boutique - Handcrafted Faux Leather Bows",
     description: "Beautiful handmade faux leather bows crafted with love in Durban, KZN. Custom orders available.",
-    siteName: "Monica's Bow Boutique",
+    siteName: "Paitons Boutique",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Monica's Bow Boutique - Handcrafted Bows",
+        alt: "Paitons Boutique - Handcrafted Bows",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Monica's Bow Boutique - Handcrafted Faux Leather Bows",
+    title: "Paitons Boutique - Handcrafted Faux Leather Bows",
     description: "Beautiful handmade faux leather bows crafted with love in Durban, KZN.",
     images: ["/og-image.jpg"],
   },

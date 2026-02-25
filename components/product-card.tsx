@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Heart, ShoppingCart } from "lucide-react"
+import { Heart, ShoppingCart, Check, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 
@@ -21,18 +21,53 @@ interface ProductCardProps {
   product: Product
 }
 
+// Generate or get customer ID
+const getCustomerId = () => {
+  if (typeof window === "undefined") return null
+  let customerId = localStorage.getItem("customer_id")
+  if (!customerId) {
+    customerId = `cust_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    localStorage.setItem("customer_id", customerId)
+  }
+  return customerId
+}
+
 export function ProductCard({ product }: ProductCardProps) {
   const [isLiked, setIsLiked] = useState(false)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const handleAddToCart = async () => {
+    const customerId = getCustomerId()
+    if (!customerId) return
+
     setIsAddingToCart(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      console.log("Added to cart:", product.name)
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: product.id,
+          quantity: 1,
+          selected_color: product.colors?.[0] || null,
+          selected_size: product.sizes?.[0] || null,
+          customer_id: customerId,
+        }),
+      })
+
+      if (response.ok) {
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 2000)
+        
+        // Dispatch event to update cart count in header
+        window.dispatchEvent(new Event("cart-updated"))
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to add to cart")
+      }
     } catch (error) {
       console.error("Failed to add to cart:", error)
+      alert("Failed to add to cart. Please try again.")
     } finally {
       setIsAddingToCart(false)
     }
@@ -40,7 +75,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const handleToggleWishlist = () => {
     setIsLiked(!isLiked)
-    console.log(isLiked ? "Removed from wishlist:" : "Added to wishlist:", product.name)
+    // TODO: Connect to wishlist API
   }
 
   const inStock = product.stock_quantity > 0
@@ -96,12 +131,22 @@ export function ProductCard({ product }: ProductCardProps) {
           {inStock ? (
             <Button
               size="sm"
-              className="bg-pink-600 hover:bg-pink-700 text-white rounded-full px-4"
+              className={`rounded-full px-4 transition-all ${
+                showSuccess
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-pink-600 hover:bg-pink-700"
+              }`}
               onClick={handleAddToCart}
-              disabled={isAddingToCart}
+              disabled={isAddingToCart || showSuccess}
             >
-              <ShoppingCart className="h-4 w-4 mr-1" />
-              {isAddingToCart ? "Adding..." : "Add to Cart"}
+              {isAddingToCart ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : showSuccess ? (
+                <Check className="h-4 w-4 mr-1" />
+              ) : (
+                <ShoppingCart className="h-4 w-4 mr-1" />
+              )}
+              {isAddingToCart ? "Adding..." : showSuccess ? "Added!" : "Add to Cart"}
             </Button>
           ) : (
             <Button size="sm" disabled variant="outline" className="rounded-full px-4 bg-transparent">

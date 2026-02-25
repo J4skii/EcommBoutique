@@ -30,6 +30,10 @@ export class PayFastService {
     this.merchantKey = process.env.PAYFAST_MERCHANT_KEY!
     this.passphrase = process.env.PAYFAST_PASSPHRASE!
     this.sandbox = process.env.NODE_ENV !== "production"
+
+    if (!this.merchantId || !this.merchantKey) {
+      throw new Error("PayFast credentials not configured")
+    }
   }
 
   generateSignature(data: Record<string, string>): string {
@@ -42,8 +46,8 @@ export class PayFastService {
     // Add passphrase if set
     const stringToHash = this.passphrase ? `${paramString}&passphrase=${this.passphrase}` : paramString
 
-    // Generate signature
-    return crypto.createHash("md5").update(stringToHash).digest("hex")
+    // Generate signature using SHA-256 (PayFast requirement)
+    return crypto.createHash("sha256").update(stringToHash).digest("hex")
   }
 
   createPaymentData(orderData: {
@@ -63,18 +67,18 @@ export class PayFastService {
       cancel_url: `${baseUrl}/payment/cancel`,
       notify_url: `${baseUrl}/api/payment/notify`,
       name_first: orderData.customerName.split(" ")[0] || "Customer",
-      name_last: orderData.customerName.split(" ").slice(1).join(" ") || "Customer",
+      name_last: orderData.customerName.split(" ").slice(1).join(" ") || "",
       email_address: orderData.customerEmail,
       cell_number: orderData.customerPhone,
       m_payment_id: orderData.orderId,
       amount: orderData.amount.toFixed(2),
-      item_name: "Monica's Bow Boutique Order",
+      item_name: "Paitons Boutique Order",
       item_description: orderData.description,
       custom_str1: orderData.orderId,
     }
 
     // Remove undefined values
-    const cleanData = Object.fromEntries(Object.entries(paymentData).filter(([_, v]) => v !== undefined))
+    const cleanData = Object.fromEntries(Object.entries(paymentData).filter(([_, v]) => v !== undefined)) as Record<string, string>
 
     const signature = this.generateSignature(cleanData)
 
@@ -92,6 +96,24 @@ export class PayFastService {
     const { signature, ...dataWithoutSignature } = data
     const calculatedSignature = this.generateSignature(dataWithoutSignature)
     return calculatedSignature === receivedSignature
+  }
+
+  // Additional PayFast security checks
+  validateIPNRequest(requestHeaders: Headers, clientIP: string): boolean {
+    // Check if request is from PayFast
+    const validHosts = ["www.payfast.co.za", "sandbox.payfast.co.za"]
+    
+    // In production, validate the source IP
+    // PayFast publishes a list of valid IPs
+    const payfastIPs = [
+      "52.31.114.135",
+      "52.49.113.86", 
+      "52.49.114.205",
+      "52.211.133.67",
+      "52.211.146.217"
+    ]
+    
+    return payfastIPs.includes(clientIP)
   }
 }
 

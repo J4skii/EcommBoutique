@@ -19,7 +19,7 @@ export default function ContactPage() {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      alert("Message sent successfully! Monica will get back to you within 24 hours.")
+      alert("Message sent successfully! Paiton will get back to you within 24 hours.")
     } catch (error) {
       alert("Failed to send message. Please try again.")
     } finally {
@@ -40,14 +40,14 @@ export default function ContactPage() {
             Let's <span className="font-semibold text-pink-600">Connect</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Have questions about our bows or need a custom order? Monica would love to hear from you!
+            Have questions about our bows or need a custom order? Paiton would love to hear from you!
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Contact Information */}
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-8">Contact Monica</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-8">Contact Paiton</h2>
 
             <div className="space-y-6">
               <Card className="border-pink-100">
@@ -87,7 +87,7 @@ export default function ContactPage() {
                       <Mail className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-1">hello@monicasbows.co.za</h3>
+                      <h3 className="font-medium text-gray-900 mb-1">hello@paitonsboutique.co.za</h3>
                       <p className="text-gray-600">We'll reply within 24 hours</p>
                       <p className="text-sm text-gray-500">For general inquiries</p>
                     </div>
@@ -136,7 +136,7 @@ export default function ContactPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Send className="h-5 w-5 text-pink-600" />
-                  Send Monica a Message
+                  Send Paiton a Message
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -196,7 +196,7 @@ export default function ContactPage() {
                     <Label htmlFor="message">Message</Label>
                     <Textarea
                       id="message"
-                      placeholder="Tell Monica what you're looking for or ask any questions..."
+                      placeholder="Tell Paiton what you're looking for or ask any questions..."
                       rows={5}
                       className="border-pink-200 focus:border-pink-400 rounded-xl"
                       required
@@ -208,7 +208,7 @@ export default function ContactPage() {
                     className="w-full bg-pink-600 hover:bg-pink-700 rounded-xl py-3"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Sending..." : "Send Message to Monica"}
+                    {isSubmitting ? "Sending..." : "Send Message to Paiton"}
                   </Button>
                 </form>
               </CardContent>

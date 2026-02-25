@@ -30,7 +30,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
       <html>
         <head>
           <meta charset="utf-8">
-          <title>Order Confirmation - Monica's Bow Boutique</title>
+          <title>Order Confirmation - Paitons Boutique</title>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -53,7 +53,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
             <div class="content">
               <p>Dear ${customerName},</p>
               
-              <p>Thank you for choosing Monica's Bow Boutique! Your order has been confirmed and Monica is excited to prepare your beautiful handcrafted bows.</p>
+              <p>Thank you for choosing Paitons Boutique! Your order has been confirmed and Paiton is excited to prepare your beautiful handcrafted bows.</p>
               
               <h3>Order Details:</h3>
               ${
@@ -106,22 +106,22 @@ export async function sendOrderConfirmationEmail(orderId: string) {
               </div>
               
               <h3>What's Next?</h3>
-              <p>Monica will begin crafting your order within 1-2 business days. Each bow is handmade with love and attention to detail, so please allow 5-7 business days for completion.</p>
+              <p>Paiton will begin crafting your order within 1-2 business days. Each bow is handmade with love and attention to detail, so please allow 5-7 business days for completion.</p>
               
               <p>You'll receive another email with tracking information once your order ships.</p>
               
               <a href="${process.env.NEXT_PUBLIC_APP_URL}/orders/${order.order_number}" class="button">Track Your Order</a>
               
-              <p>If you have any questions, feel free to contact Monica directly:</p>
+              <p>If you have any questions, feel free to contact Paiton directly:</p>
               <ul>
-                <li>📧 hello@monicasbows.co.za</li>
+                <li>📧 hello@paitonsboutique.co.za</li>
                 <li>📱 +27 123 456 789 (WhatsApp)</li>
               </ul>
             </div>
             
             <div class="footer">
               <p>With love from Durban, KZN ❤️<br>
-              Monica's Bow Boutique</p>
+              Paitons Boutique</p>
             </div>
           </div>
         </body>
@@ -129,16 +129,16 @@ export async function sendOrderConfirmationEmail(orderId: string) {
     `
 
     await resend.emails.send({
-      from: "Monica's Bow Boutique <orders@monicasbows.co.za>",
+      from: "Paitons Boutique <orders@paitonsboutique.co.za>",
       to: [order.customer_email],
-      subject: `Order Confirmation #${order.order_number} - Monica's Bow Boutique`,
+      subject: `Order Confirmation #${order.order_number} - Paitons Boutique`,
       html: emailHtml,
     })
 
-    // Send notification to Monica
+    // Send notification to Paiton
     await resend.emails.send({
-      from: "Monica's Bow Boutique <orders@monicasbows.co.za>",
-      to: ["monica@monicasbows.co.za"],
+      from: "Paitons Boutique <orders@paitonsboutique.co.za>",
+      to: ["paiton@paitonsboutique.co.za"],
       subject: `New Order #${order.order_number}`,
       html: `
         <h2>New Order Received!</h2>
@@ -169,10 +169,10 @@ export async function sendCustomOrderNotification(customOrderId: string) {
       throw new Error("Custom order not found")
     }
 
-    // Send notification to Monica
+    // Send notification to Paiton
     await resend.emails.send({
-      from: "Monica's Bow Boutique <orders@monicasbows.co.za>",
-      to: ["monica@monicasbows.co.za"],
+      from: "Paitons Boutique <orders@paitonsboutique.co.za>",
+      to: ["paiton@paitonsboutique.co.za"],
       subject: `New Custom Order Request from ${customOrder.customer_name}`,
       html: `
         <h2>New Custom Order Request!</h2>
@@ -191,13 +191,13 @@ export async function sendCustomOrderNotification(customOrderId: string) {
 
     // Send confirmation to customer
     await resend.emails.send({
-      from: "Monica's Bow Boutique <orders@monicasbows.co.za>",
+      from: "Paitons Boutique <orders@paitonsboutique.co.za>",
       to: [customOrder.customer_email],
-      subject: "Custom Order Request Received - Monica's Bow Boutique",
+      subject: "Custom Order Request Received - Paitons Boutique",
       html: `
         <h2>Thank you for your custom order request!</h2>
         <p>Dear ${customOrder.customer_name},</p>
-        <p>Monica has received your custom bow request and will contact you within 24 hours to discuss the details and provide a final quote.</p>
+        <p>Paiton has received your custom bow request and will contact you within 24 hours to discuss the details and provide a final quote.</p>
         <p><strong>Your Request Details:</strong></p>
         <ul>
           <li>Colors: ${customOrder.colors.join(", ")}</li>
@@ -205,8 +205,8 @@ export async function sendCustomOrderNotification(customOrderId: string) {
           <li>Quantity: ${customOrder.quantity}</li>
           <li>Estimated Price: R${customOrder.estimated_price}</li>
         </ul>
-        <p>Monica will be in touch soon!</p>
-        <p>Best regards,<br>Monica's Bow Boutique</p>
+        <p>Paiton will be in touch soon!</p>
+        <p>Best regards,<br>Paitons Boutique</p>
       `,
     })
 
@@ -220,12 +220,12 @@ export async function sendCustomOrderNotification(customOrderId: string) {
 export async function sendNewsletterWelcome(email: string, firstName?: string) {
   try {
     await resend.emails.send({
-      from: "Monica's Bow Boutique <hello@monicasbows.co.za>",
+      from: "Paitons Boutique <hello@paitonsboutique.co.za>",
       to: [email],
-      subject: "Welcome to Monica's Bow Boutique Family! ✨",
+      subject: "Welcome to Paitons Boutique Family! ✨",
       html: `
         <h2>Welcome ${firstName || "Beautiful"}!</h2>
-        <p>Thank you for joining the Monica's Bow Boutique family! You'll be the first to know about:</p>
+        <p>Thank you for joining the Paitons Boutique family! You'll be the first to know about:</p>
         <ul>
           <li>✨ New bow collections</li>
           <li>🎉 Exclusive discounts</li>
@@ -233,7 +233,7 @@ export async function sendNewsletterWelcome(email: string, firstName?: string) {
           <li>💝 Special offers just for subscribers</li>
         </ul>
         <p>As a welcome gift, use code <strong>WELCOME10</strong> for 10% off your first order!</p>
-        <p>With love from Durban,<br>Monica ❤️</p>
+        <p>With love from Durban,<br>Paiton ❤️</p>
       `,
     })
   } catch (error) {

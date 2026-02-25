@@ -13,7 +13,7 @@ export function Footer() {
                 <Sparkles className="h-6 w-6 text-white fill-current" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg text-gray-800">Monica's Bow Boutique</h3>
+                <h3 className="font-semibold text-lg text-gray-800">Paitons Boutique</h3>
                 <p className="text-sm text-pink-600 font-medium">Handcrafted with Love in Durban</p>
               </div>
             </div>
@@ -41,7 +41,7 @@ export function Footer() {
                 <MessageCircle className="h-4 w-4" />
               </Link>
               <Link
-                href="mailto:hello@monicasbows.co.za"
+                href="mailto:hello@paitonsboutique.co.za"
                 className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 hover:bg-pink-200 transition-colors"
               >
                 <Mail className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/about" className="text-gray-600 hover:text-pink-600 transition-colors">
-                  About Monica
+                  About Paiton
                 </Link>
               </li>
               <li>
@@ -127,11 +127,11 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-pink-500" />
-                <span>hello@monicasbows.co.za</span>
+                <span>hello@paitonsboutique.co.za</span>
               </div>
             </div>
             <p className="text-gray-600 text-sm">
-              &copy; 2024 Monica's Bow Boutique. Made with 💖 in Durban, KZN, South Africa.
+              &copy; 2024 Paitons Boutique. Made with 💖 in Durban, KZN, South Africa.
             </p>
           </div>
         </div>

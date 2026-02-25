@@ -54,7 +54,7 @@ export default function CustomOrdersPage() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      alert("Custom order request submitted successfully! Monica will contact you within 24 hours.")
+      alert("Custom order request submitted successfully! Paiton will contact you within 24 hours.")
     } catch (error) {
       alert("Failed to submit order. Please try again.")
     } finally {
@@ -74,7 +74,7 @@ export default function CustomOrdersPage() {
             Design Your <span className="font-semibold text-pink-600">Perfect Bow</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Work directly with Monica to create a one-of-a-kind bow that's perfectly tailored to your style and needs.
+            Work directly with Paiton to create a one-of-a-kind bow that's perfectly tailored to your style and needs.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default function CustomOrdersPage() {
                   Custom Bow Designer
                 </CardTitle>
                 <CardDescription>
-                  Tell Monica exactly what you're looking for and she'll bring your vision to life.
+                  Tell Paiton exactly what you're looking for and she'll bring your vision to life.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -177,7 +177,7 @@ export default function CustomOrdersPage() {
                     <Label htmlFor="description">Special Requests & Description</Label>
                     <Textarea
                       id="description"
-                      placeholder="Describe your vision... any special details, occasions, or inspiration you'd like Monica to know about"
+                      placeholder="Describe your vision... any special details, occasions, or inspiration you'd like Paiton to know about"
                       rows={4}
                       className="border-pink-200 focus:border-pink-400"
                     />
@@ -242,7 +242,7 @@ export default function CustomOrdersPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-4 text-center">
-                  Monica will contact you within 24 hours to discuss your order
+                  Paiton will contact you within 24 hours to discuss your order
                 </p>
               </CardContent>
             </Card>
@@ -263,7 +263,7 @@ export default function CustomOrdersPage() {
                     </div>
                     <div>
                       <p className="font-medium text-sm">Submit Request</p>
-                      <p className="text-xs text-gray-600">Tell Monica about your dream bow</p>
+                      <p className="text-xs text-gray-600">Tell Paiton about your dream bow</p>
                     </div>
                   </div>
                   <div className="flex gap-3">
@@ -272,7 +272,7 @@ export default function CustomOrdersPage() {
                     </div>
                     <div>
                       <p className="font-medium text-sm">Design Consultation</p>
-                      <p className="text-xs text-gray-600">Monica contacts you within 24 hours</p>
+                      <p className="text-xs text-gray-600">Paiton contacts you within 24 hours</p>
                     </div>
                   </div>
                   <div className="flex gap-3">

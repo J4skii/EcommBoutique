@@ -12,7 +12,7 @@ export function AboutSection() {
               <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-xl">
                 <Image
                   src="/placeholder.svg?height=500&width=600"
-                  alt="Monica crafting beautiful bows in her Durban studio"
+                  alt="Paiton crafting beautiful bows in her Durban studio"
                   fill
                   className="object-cover"
                 />
@@ -33,7 +33,7 @@ export function AboutSection() {
           <div className="order-1 lg:order-2">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-12 h-0.5 bg-pink-400"></div>
-              <span className="text-pink-600 font-medium text-sm tracking-wide uppercase">Monica's Story</span>
+              <span className="text-pink-600 font-medium text-sm tracking-wide uppercase">Paiton's Story</span>
             </div>
             <h2 className="text-3xl lg:text-4xl font-light text-gray-800 mb-6">
               Crafted with

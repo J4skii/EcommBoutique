@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,50 +10,179 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CreditCard, Truck, Shield, ArrowLeft } from "lucide-react"
+import { CreditCard, Truck, Shield, ArrowLeft, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
-const cartItems = [
-  {
-    id: "1",
-    name: "Classic Rose Bow",
-    price: 45,
-    quantity: 2,
-    image_url: "/placeholder.svg?height=60&width=60",
-  },
-  {
-    id: "2",
-    name: "Forest Green Bow",
-    price: 48,
-    quantity: 1,
-    image_url: "/placeholder.svg?height=60&width=60",
-  },
-]
+interface CartItem {
+  id: string
+  product_id: string
+  name: string
+  price: number
+  quantity: number
+  image_url: string
+  selected_color: string | null
+  selected_size: string | null
+}
+
+// Get customer ID from localStorage
+const getCustomerId = () => {
+  if (typeof window === "undefined") return null
+  let customerId = localStorage.getItem("customer_id")
+  if (!customerId) {
+    customerId = `cust_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    localStorage.setItem("customer_id", customerId)
+  }
+  return customerId
+}
 
 export default function CheckoutPage() {
+  const router = useRouter()
   const [paymentMethod, setPaymentMethod] = useState("payfast")
   const [sameAsShipping, setSameAsShipping] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchCart()
+  }, [])
+
+  const fetchCart = async () => {
+    const customerId = getCustomerId()
+    if (!customerId) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/cart?customer_id=${customerId}`)
+      if (response.ok) {
+        const data = await response.json()
+        const items = data.cartItems?.map((item: any) => ({
+          id: item.id,
+          product_id: item.product_id,
+          name: item.products?.name || "Product",
+          price: item.products?.price || 0,
+          quantity: item.quantity,
+          image_url: item.products?.image_url || "/placeholder.svg",
+          selected_color: item.selected_color,
+          selected_size: item.selected_size,
+        })) || []
+        setCartItems(items)
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error)
+      setError("Failed to load cart. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsProcessing(true)
+    setError(null)
+
+    const formData = new FormData(e.currentTarget)
+
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_email: formData.get("email"),
+          customer_phone: formData.get("phone"),
+          items: cartItems.map(item => ({
+            product_id: item.product_id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            selected_color: item.selected_color,
+            selected_size: item.selected_size,
+          })),
+          shipping_address: {
+            first_name: formData.get("firstName"),
+            last_name: formData.get("lastName"),
+            address: formData.get("address1"),
+            address2: formData.get("address2"),
+            city: formData.get("city"),
+            province: formData.get("province"),
+            postal_code: formData.get("postal"),
+          },
+          billing_address: sameAsShipping ? undefined : {
+            first_name: formData.get("billFirstName"),
+            last_name: formData.get("billLastName"),
+            address: formData.get("billAddress1"),
+            city: formData.get("billCity"),
+            province: formData.get("billProvince"),
+            postal_code: formData.get("billPostal"),
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Checkout failed")
+      }
+
+      if (data.paymentUrl && data.paymentData) {
+        // Create and submit PayFast form
+        const form = document.createElement("form")
+        form.method = "POST"
+        form.action = data.paymentUrl
+
+        Object.entries(data.paymentData).forEach(([key, value]) => {
+          const input = document.createElement("input")
+          input.type = "hidden"
+          input.name = key
+          input.value = value as string
+          form.appendChild(input)
+        })
+
+        document.body.appendChild(form)
+        form.submit()
+      } else {
+        throw new Error("Payment initialization failed")
+      }
+
+    } catch (err: any) {
+      console.error("Checkout error:", err)
+      setError(err.message || "Failed to process checkout. Please try again.")
+      setIsProcessing(false)
+    }
+  }
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shipping = subtotal >= 300 ? 0 : 50
   const total = subtotal + shipping
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsProcessing(true)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
+        <div className="container mx-auto max-w-2xl px-4 text-center">
+          <Loader2 className="h-12 w-12 text-pink-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading checkout...</p>
+        </div>
+      </div>
+    )
+  }
 
-    try {
-      // Simulate order processing
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      // Redirect to payment or success page
-      alert("Order placed successfully! Redirecting to payment...")
-    } catch (error) {
-      alert("Failed to process order. Please try again.")
-    } finally {
-      setIsProcessing(false)
-    }
+  if (cartItems.length === 0 && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
+        <div className="container mx-auto max-w-2xl px-4 text-center">
+          <h1 className="text-3xl font-light text-gray-800 mb-4">Your Cart is Empty</h1>
+          <p className="text-gray-600 mb-8">Add some items to your cart before checkout.</p>
+          <Button asChild className="bg-pink-600 hover:bg-pink-700 rounded-full px-8">
+            <Link href="/products">Shop Now</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -70,6 +199,12 @@ export default function CheckoutPage() {
             <span className="font-semibold text-pink-600">Checkout</span>
           </h1>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-2 gap-8">
@@ -88,21 +223,21 @@ export default function CheckoutPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" required className="border-pink-200" />
+                      <Label htmlFor="firstName">First Name *</Label>
+                      <Input id="firstName" name="firstName" required className="border-pink-200" />
                     </div>
                     <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" required className="border-pink-200" />
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input id="lastName" name="lastName" required className="border-pink-200" />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" required className="border-pink-200" />
+                    <Label htmlFor="email">Email Address *</Label>
+                    <Input id="email" name="email" type="email" required className="border-pink-200" />
                   </div>
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" placeholder="+27 123 456 789" required className="border-pink-200" />
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input id="phone" name="phone" placeholder="+27 123 456 789" required className="border-pink-200" />
                   </div>
                 </CardContent>
               </Card>
@@ -119,40 +254,40 @@ export default function CheckoutPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="address1">Address Line 1</Label>
-                    <Input id="address1" required className="border-pink-200" />
+                    <Label htmlFor="address1">Address Line 1 *</Label>
+                    <Input id="address1" name="address1" required className="border-pink-200" />
                   </div>
                   <div>
                     <Label htmlFor="address2">Address Line 2 (Optional)</Label>
-                    <Input id="address2" className="border-pink-200" />
+                    <Input id="address2" name="address2" className="border-pink-200" />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input id="city" required className="border-pink-200" />
+                      <Label htmlFor="city">City *</Label>
+                      <Input id="city" name="city" required className="border-pink-200" />
                     </div>
                     <div>
-                      <Label htmlFor="province">Province</Label>
-                      <Select>
+                      <Label htmlFor="province">Province *</Label>
+                      <Select name="province" required>
                         <SelectTrigger className="border-pink-200">
                           <SelectValue placeholder="Select province" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="kzn">KwaZulu-Natal</SelectItem>
-                          <SelectItem value="gauteng">Gauteng</SelectItem>
-                          <SelectItem value="western-cape">Western Cape</SelectItem>
-                          <SelectItem value="eastern-cape">Eastern Cape</SelectItem>
-                          <SelectItem value="free-state">Free State</SelectItem>
-                          <SelectItem value="limpopo">Limpopo</SelectItem>
-                          <SelectItem value="mpumalanga">Mpumalanga</SelectItem>
-                          <SelectItem value="northern-cape">Northern Cape</SelectItem>
-                          <SelectItem value="north-west">North West</SelectItem>
+                          <SelectItem value="KwaZulu-Natal">KwaZulu-Natal</SelectItem>
+                          <SelectItem value="Gauteng">Gauteng</SelectItem>
+                          <SelectItem value="Western Cape">Western Cape</SelectItem>
+                          <SelectItem value="Eastern Cape">Eastern Cape</SelectItem>
+                          <SelectItem value="Free State">Free State</SelectItem>
+                          <SelectItem value="Limpopo">Limpopo</SelectItem>
+                          <SelectItem value="Mpumalanga">Mpumalanga</SelectItem>
+                          <SelectItem value="Northern Cape">Northern Cape</SelectItem>
+                          <SelectItem value="North West">North West</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="postal">Postal Code</Label>
-                      <Input id="postal" required className="border-pink-200" />
+                      <Label htmlFor="postal">Postal Code *</Label>
+                      <Input id="postal" name="postal" required className="border-pink-200" />
                     </div>
                   </div>
                 </CardContent>
@@ -170,37 +305,53 @@ export default function CheckoutPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-2 mb-4">
-                    <Checkbox id="sameAsShipping" checked={sameAsShipping} onCheckedChange={setSameAsShipping} />
+                    <Checkbox id="sameAsShipping" checked={sameAsShipping} onCheckedChange={(checked) => setSameAsShipping(checked as boolean)} />
                     <Label htmlFor="sameAsShipping">Same as shipping address</Label>
                   </div>
 
                   {!sameAsShipping && (
                     <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="billFirstName">First Name *</Label>
+                          <Input id="billFirstName" name="billFirstName" required className="border-pink-200" />
+                        </div>
+                        <div>
+                          <Label htmlFor="billLastName">Last Name *</Label>
+                          <Input id="billLastName" name="billLastName" required className="border-pink-200" />
+                        </div>
+                      </div>
                       <div>
-                        <Label htmlFor="billAddress1">Address Line 1</Label>
-                        <Input id="billAddress1" required className="border-pink-200" />
+                        <Label htmlFor="billAddress1">Address Line 1 *</Label>
+                        <Input id="billAddress1" name="billAddress1" required className="border-pink-200" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <Label htmlFor="billCity">City</Label>
-                          <Input id="billCity" required className="border-pink-200" />
+                          <Label htmlFor="billCity">City *</Label>
+                          <Input id="billCity" name="billCity" required className="border-pink-200" />
                         </div>
                         <div>
-                          <Label htmlFor="billProvince">Province</Label>
-                          <Select>
+                          <Label htmlFor="billProvince">Province *</Label>
+                          <Select name="billProvince" required>
                             <SelectTrigger className="border-pink-200">
                               <SelectValue placeholder="Select province" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="kzn">KwaZulu-Natal</SelectItem>
-                              <SelectItem value="gauteng">Gauteng</SelectItem>
-                              <SelectItem value="western-cape">Western Cape</SelectItem>
+                              <SelectItem value="KwaZulu-Natal">KwaZulu-Natal</SelectItem>
+                              <SelectItem value="Gauteng">Gauteng</SelectItem>
+                              <SelectItem value="Western Cape">Western Cape</SelectItem>
+                              <SelectItem value="Eastern Cape">Eastern Cape</SelectItem>
+                              <SelectItem value="Free State">Free State</SelectItem>
+                              <SelectItem value="Limpopo">Limpopo</SelectItem>
+                              <SelectItem value="Mpumalanga">Mpumalanga</SelectItem>
+                              <SelectItem value="Northern Cape">Northern Cape</SelectItem>
+                              <SelectItem value="North West">North West</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="billPostal">Postal Code</Label>
-                          <Input id="billPostal" required className="border-pink-200" />
+                          <Label htmlFor="billPostal">Postal Code *</Label>
+                          <Input id="billPostal" name="billPostal" required className="border-pink-200" />
                         </div>
                       </div>
                     </div>
@@ -233,7 +384,7 @@ export default function CheckoutPage() {
                       </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2 p-4 border border-pink-200 rounded-lg">
+                    <div className="flex items-center space-x-2 p-4 border border-pink-200 rounded-lg mt-2">
                       <RadioGroupItem value="eft" id="eft" />
                       <Label htmlFor="eft" className="flex-1 cursor-pointer">
                         <div>
@@ -317,8 +468,19 @@ export default function CheckoutPage() {
                     </ul>
                   </div>
 
-                  <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 mt-6" disabled={isProcessing}>
-                    {isProcessing ? "Processing..." : `Complete Order - R${total.toFixed(2)}`}
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-pink-600 hover:bg-pink-700 mt-6" 
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      `Complete Order - R${total.toFixed(2)}`
+                    )}
                   </Button>
                 </CardContent>
               </Card>

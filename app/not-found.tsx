@@ -40,7 +40,7 @@ export default function NotFound() {
           <p>
             Need help?{" "}
             <Link href="/contact" className="text-pink-600 hover:underline">
-              Contact Monica
+              Contact Paiton
             </Link>
           </p>
         </div>

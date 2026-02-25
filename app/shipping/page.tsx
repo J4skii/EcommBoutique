@@ -10,7 +10,7 @@ export default function ShippingPage() {
             <span className="font-semibold text-pink-600">Shipping</span> Information
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            We deliver Monica's beautiful handcrafted bows nationwide across South Africa
+            We deliver Paiton's beautiful handcrafted bows nationwide across South Africa
           </p>
         </div>
 
@@ -175,7 +175,7 @@ export default function ShippingPage() {
                     </div>
                     <div>
                       <p className="font-medium text-sm">Design Consultation</p>
-                      <p className="text-xs text-gray-600">Monica contacts you within 24hrs</p>
+                      <p className="text-xs text-gray-600">Paiton contacts you within 24hrs</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

@@ -15,7 +15,7 @@ export default function PrivacyPage() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Information We Collect</h2>
               <p className="text-gray-600 mb-4">
-                When you visit Monica's Bow Boutique, we collect information to provide you with the best possible
+                When you visit Paitons Boutique, we collect information to provide you with the best possible
                 service:
               </p>
               <ul className="list-disc pl-6 text-gray-600 space-y-2">
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Contact Us</h2>
               <p className="text-gray-600">If you have any questions about this Privacy Policy, please contact us:</p>
               <div className="mt-4 text-gray-600">
-                <p>Email: hello@monicasbows.co.za</p>
+                <p>Email: hello@paitonsboutique.co.za</p>
                 <p>Phone: +27 123 456 789</p>
                 <p>Address: Durban, KwaZulu-Natal, South Africa</p>
               </div>

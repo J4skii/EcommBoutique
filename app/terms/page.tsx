@@ -15,7 +15,7 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Agreement to Terms</h2>
               <p className="text-gray-600">
-                By accessing and using Monica's Bow Boutique website, you accept and agree to be bound by the terms and
+                By accessing and using Paitons Boutique website, you accept and agree to be bound by the terms and
                 provision of this agreement. If you do not agree to abide by the above, please do not use this service.
               </p>
             </section>
@@ -64,15 +64,15 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Intellectual Property</h2>
               <p className="text-gray-600">
-                All content on this website, including designs, text, graphics, and images, is the property of Monica's
-                Bow Boutique and is protected by copyright laws.
+                All content on this website, including designs, text, graphics, and images, is the property of Paitons
+                Boutique and is protected by copyright laws.
               </p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Limitation of Liability</h2>
               <p className="text-gray-600">
-                Monica's Bow Boutique shall not be liable for any indirect, incidental, special, consequential, or
+                Paitons Boutique shall not be liable for any indirect, incidental, special, consequential, or
                 punitive damages resulting from your use of our products or services.
               </p>
             </section>
@@ -81,7 +81,7 @@ export default function TermsPage() {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Contact Information</h2>
               <p className="text-gray-600">For questions about these Terms of Service, please contact us:</p>
               <div className="mt-4 text-gray-600">
-                <p>Email: hello@monicasbows.co.za</p>
+                <p>Email: hello@paitonsboutique.co.za</p>
                 <p>Phone: +27 123 456 789</p>
                 <p>Address: Durban, KwaZulu-Natal, South Africa</p>
               </div>

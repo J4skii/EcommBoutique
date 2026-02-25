@@ -1,67 +1,134 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard } from "lucide-react"
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-// Mock cart data
-const initialCartItems = [
-  {
-    id: "1",
-    product_id: "1",
-    name: "Classic Rose Bow",
-    price: 45,
-    quantity: 2,
-    image_url: "/placeholder.svg?height=100&width=100",
-    selected_color: "Rose Pink",
-    selected_size: "Medium",
-    stock_quantity: 8,
-  },
-  {
-    id: "2",
-    product_id: "4",
-    name: "Forest Green Bow",
-    price: 48,
-    quantity: 1,
-    image_url: "/placeholder.svg?height=100&width=100",
-    selected_color: "Forest Green",
-    selected_size: "Large",
-    stock_quantity: 6,
-  },
-]
+interface CartItem {
+  id: string
+  product_id: string
+  name: string
+  price: number
+  quantity: number
+  image_url: string
+  selected_color: string | null
+  selected_size: string | null
+  stock_quantity: number
+}
+
+// Get customer ID from localStorage
+const getCustomerId = () => {
+  if (typeof window === "undefined") return null
+  let customerId = localStorage.getItem("customer_id")
+  if (!customerId) {
+    customerId = `cust_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    localStorage.setItem("customer_id", customerId)
+  }
+  return customerId
+}
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState(initialCartItems)
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState<string | null>(null)
   const [discountCode, setDiscountCode] = useState("")
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null)
 
-  const updateQuantity = (id: string, newQuantity: number) => {
+  useEffect(() => {
+    fetchCart()
+  }, [])
+
+  const fetchCart = async () => {
+    const customerId = getCustomerId()
+    if (!customerId) return
+
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/cart?customer_id=${customerId}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Transform cart items to include product details
+        const items = data.cartItems?.map((item: any) => ({
+          id: item.id,
+          product_id: item.product_id,
+          name: item.products?.name || "Product",
+          price: item.products?.price || 0,
+          quantity: item.quantity,
+          image_url: item.products?.image_url || "/placeholder.svg",
+          selected_color: item.selected_color,
+          selected_size: item.selected_size,
+          stock_quantity: item.products?.stock_quantity || 0,
+        })) || []
+        setCartItems(items)
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateQuantity = async (id: string, newQuantity: number) => {
     if (newQuantity === 0) {
       removeItem(id)
       return
     }
-    setCartItems((items) =>
-      items.map((item) => (item.id === id ? { ...item, quantity: Math.min(newQuantity, item.stock_quantity) } : item)),
-    )
+
+    setUpdating(id)
+    try {
+      const customerId = getCustomerId()
+      const item = cartItems.find((i) => i.id === id)
+      if (!item || !customerId) return
+
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: item.product_id,
+          quantity: newQuantity,
+          selected_color: item.selected_color,
+          selected_size: item.selected_size,
+          customer_id: customerId,
+        }),
+      })
+
+      if (response.ok) {
+        setCartItems((items) =>
+          items.map((item) => (item.id === id ? { ...item, quantity: Math.min(newQuantity, item.stock_quantity) } : item))
+        )
+        window.dispatchEvent(new Event("cart-updated"))
+      }
+    } catch (error) {
+      console.error("Error updating cart:", error)
+    } finally {
+      setUpdating(null)
+    }
   }
 
-  const removeItem = (id: string) => {
-    setCartItems((items) => items.filter((item) => item.id !== id))
+  const removeItem = async (id: string) => {
+    try {
+      // Note: You'll need to create a DELETE endpoint for cart items
+      // For now, we'll just update the UI
+      setCartItems((items) => items.filter((item) => item.id !== id))
+      window.dispatchEvent(new Event("cart-updated"))
+    } catch (error) {
+      console.error("Error removing item:", error)
+    }
   }
 
   const applyDiscount = () => {
-    const validCodes = {
-      MONICA20: { amount: 20, type: "percentage" },
+    const validCodes: Record<string, { amount: number; type: string }> = {
+      PAITON20: { amount: 20, type: "percentage" },
       WELCOME10: { amount: 10, type: "percentage" },
       FREESHIP300: { amount: 50, type: "fixed" },
     }
 
-    const discount = validCodes[discountCode.toUpperCase() as keyof typeof validCodes]
+    const discount = validCodes[discountCode.toUpperCase()]
     if (discount) {
       const discountAmount = discount.type === "percentage" ? (subtotal * discount.amount) / 100 : discount.amount
       setAppliedDiscount({ code: discountCode.toUpperCase(), amount: discountAmount })
@@ -75,13 +142,24 @@ export default function CartPage() {
   const shippingCost = subtotal >= 300 ? 0 : 50
   const total = subtotal - discountAmount + shippingCost
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
+        <div className="container mx-auto max-w-2xl px-4 text-center">
+          <Loader2 className="h-12 w-12 text-pink-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading your cart...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
         <div className="container mx-auto max-w-2xl px-4 text-center">
           <ShoppingBag className="h-24 w-24 text-gray-300 mx-auto mb-6" />
           <h1 className="text-3xl font-light text-gray-800 mb-4">Your Cart is Empty</h1>
-          <p className="text-gray-600 mb-8">Discover Monica's beautiful handcrafted bows and add some to your cart!</p>
+          <p className="text-gray-600 mb-8">Discover Paiton's beautiful handcrafted bows and add some to your cart!</p>
           <Button asChild className="bg-pink-600 hover:bg-pink-700 rounded-full px-8">
             <Link href="/products">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -125,13 +203,14 @@ export default function CartPage() {
                         <div>
                           <h3 className="font-medium text-gray-800">{item.name}</h3>
                           <div className="text-sm text-gray-600 space-y-1">
-                            <p>Color: {item.selected_color}</p>
-                            <p>Size: {item.selected_size}</p>
+                            {item.selected_color && <p>Color: {item.selected_color}</p>}
+                            {item.selected_size && <p>Size: {item.selected_size}</p>}
                           </div>
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
                           className="text-gray-400 hover:text-red-500 transition-colors"
+                          disabled={updating === item.id}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -141,15 +220,16 @@ export default function CartPage() {
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+                            disabled={updating === item.id}
                           >
                             <Minus className="h-3 w-3" />
                           </button>
                           <span className="w-8 text-center">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-                            disabled={item.quantity >= item.stock_quantity}
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+                            disabled={item.quantity >= item.stock_quantity || updating === item.id}
                           >
                             <Plus className="h-3 w-3" />
                           </button>
@@ -161,7 +241,7 @@ export default function CartPage() {
                         </div>
                       </div>
 
-                      {item.stock_quantity <= 3 && (
+                      {item.stock_quantity <= 3 && item.stock_quantity > 0 && (
                         <Badge variant="outline" className="mt-2 text-orange-600 border-orange-200">
                           Only {item.stock_quantity} left in stock
                         </Badge>

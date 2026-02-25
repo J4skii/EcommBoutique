@@ -16,7 +16,7 @@ export default function AboutPage() {
                 <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-xl">
                   <Image
                     src="/placeholder.svg?height=500&width=600"
-                    alt="Monica in her Durban studio crafting beautiful bows"
+                    alt="Paiton in her Durban studio crafting beautiful bows"
                     fill
                     className="object-cover"
                   />
@@ -36,7 +36,7 @@ export default function AboutPage() {
             <div className="order-1 lg:order-2">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-12 h-0.5 bg-pink-400"></div>
-                <span className="text-pink-600 font-medium text-sm tracking-wide uppercase">About Monica</span>
+                <span className="text-pink-600 font-medium text-sm tracking-wide uppercase">About Paiton</span>
               </div>
               <h1 className="text-4xl lg:text-5xl font-light text-gray-800 mb-6">
                 Crafting Beauty with
@@ -101,7 +101,7 @@ export default function AboutPage() {
               <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Growing Recognition</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Word spread about Monica's beautiful bows. Regular customers became friends, and custom orders started
+                  Word spread about Paiton's beautiful bows. Regular customers became friends, and custom orders started
                   pouring in for weddings, special events, and corporate functions.
                 </p>
               </div>
@@ -114,7 +114,7 @@ export default function AboutPage() {
               <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Going Digital</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Launched Monica's Bow Boutique online to share my passion with customers across South Africa. Every
+                  Launched Paitons Boutique online to share my passion with customers across South Africa. Every
                   bow is still handcrafted with the same love and attention to detail.
                 </p>
               </div>
@@ -207,7 +207,7 @@ export default function AboutPage() {
             Ready to Find Your <span className="font-semibold text-pink-600">Perfect Bow?</span>
           </h2>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            Browse our collection of handcrafted bows or work with Monica to create something uniquely yours.
+            Browse our collection of handcrafted bows or work with Paiton to create something uniquely yours.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="bg-pink-600 hover:bg-pink-700 rounded-full px-8">

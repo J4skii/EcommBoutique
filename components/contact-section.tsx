@@ -17,13 +17,13 @@ export function ContactSection() {
             Let's <span className="font-semibold text-pink-600">Connect</span>
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Have questions about our bows or need a custom order? Monica would love to hear from you!
+            Have questions about our bows or need a custom order? Paiton would love to hear from you!
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Contact Monica</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Contact Paiton</h3>
 
             <div className="space-y-6">
               <div className="flex items-start gap-4">
@@ -52,7 +52,7 @@ export function ContactSection() {
                   <Mail className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">hello@monicasbows.co.za</p>
+                  <p className="font-medium text-gray-900">hello@paitonsboutique.co.za</p>
                   <p className="text-gray-600">We'll reply within 24 hours</p>
                 </div>
               </div>
@@ -97,7 +97,7 @@ export function ContactSection() {
                 rows={4}
                 className="border-pink-200 focus:border-pink-400 rounded-xl"
               />
-              <Button className="w-full bg-pink-600 hover:bg-pink-700 rounded-xl py-3">Send Message to Monica</Button>
+              <Button className="w-full bg-pink-600 hover:bg-pink-700 rounded-xl py-3">Send Message to Paiton</Button>
             </form>
           </div>
         </div>

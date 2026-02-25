@@ -14,7 +14,7 @@ export function HeroSection() {
               <span className="text-pink-600 font-medium text-sm tracking-wide uppercase">Handcrafted Beauty</span>
             </div>
             <h1 className="text-4xl lg:text-5xl font-light text-gray-800 mb-6 leading-tight">
-              Monica's
+              Paiton's
               <span className="font-semibold text-pink-600 block">Bow Boutique</span>
             </h1>
             <p className="text-lg text-gray-600 mb-6 max-w-lg leading-relaxed">
@@ -50,7 +50,7 @@ export function HeroSection() {
                 asChild
                 className="border-pink-200 text-pink-700 hover:bg-pink-50 px-8 py-3 rounded-full"
               >
-                <Link href="#story">Monica's Story</Link>
+                <Link href="#story">Paiton's Story</Link>
               </Button>
             </div>
 
@@ -67,7 +67,7 @@ export function HeroSection() {
               <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-xl">
                 <Image
                   src="/placeholder.svg?height=500&width=600"
-                  alt="Monica's beautiful handmade faux leather bows"
+                  alt="Paiton's beautiful handmade faux leather bows"
                   fill
                   className="object-cover"
                   priority

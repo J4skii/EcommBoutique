@@ -12,7 +12,7 @@ export default function ReturnsPage() {
             <span className="font-semibold text-pink-600">Returns</span> & Exchanges
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Your satisfaction is our priority. We want you to love your Monica's bow!
+            Your satisfaction is our priority. We want you to love your Paiton's bow!
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export default function ReturnsPage() {
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Non-refundable unless defective</li>
                   <li>• Quality issues covered 100%</li>
-                  <li>• Contact Monica within 7 days</li>
+                  <li>• Contact Paiton within 7 days</li>
                   <li>• Photo evidence may be required</li>
                 </ul>
               </div>
@@ -117,7 +117,7 @@ export default function ReturnsPage() {
                   <div>
                     <h4 className="font-semibold text-gray-800">Contact Us</h4>
                     <p className="text-sm text-gray-600">
-                      Email hello@monicasbows.co.za with your order number and reason for return
+                      Email hello@paitonsboutique.co.za with your order number and reason for return
                     </p>
                   </div>
                 </div>
@@ -156,14 +156,14 @@ export default function ReturnsPage() {
               <div className="mt-6 p-4 bg-pink-50 rounded-lg">
                 <h4 className="font-semibold text-gray-800 mb-2">Need Help?</h4>
                 <p className="text-sm text-gray-600 mb-3">
-                  Monica is here to help! Contact us for any questions about returns or exchanges.
+                  Paiton is here to help! Contact us for any questions about returns or exchanges.
                 </p>
                 <div className="flex gap-2">
                   <Button size="sm" asChild className="bg-pink-600 hover:bg-pink-700">
-                    <Link href="/contact">Contact Monica</Link>
+                    <Link href="/contact">Contact Paiton</Link>
                   </Button>
                   <Button size="sm" variant="outline" className="border-pink-200 text-pink-600 bg-transparent">
-                    <Link href="mailto:hello@monicasbows.co.za">Email Us</Link>
+                    <Link href="mailto:hello@paitonsboutique.co.za">Email Us</Link>
                   </Button>
                 </div>
               </div>
@@ -219,7 +219,7 @@ export default function ReturnsPage() {
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-1">Can I return after 30 days?</h4>
                   <p className="text-sm text-gray-600">
-                    We may consider returns after 30 days on a case-by-case basis. Contact Monica to discuss your
+                    We may consider returns after 30 days on a case-by-case basis. Contact Paiton to discuss your
                     situation.
                   </p>
                 </div>

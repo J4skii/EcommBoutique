@@ -9,10 +9,10 @@ INSERT INTO products (name, description, price, stock_quantity, colors, sizes, i
 
 -- Insert discount codes
 INSERT INTO discount_codes (code, description, type, value, minimum_order_amount, usage_limit, valid_until) VALUES
-('MONICA20', 'Welcome discount - 20% off first order', 'percentage', 20.00, 100.00, 100, NOW() + INTERVAL '3 months'),
+('PAITON20', 'Welcome discount - 20% off first order', 'percentage', 20.00, 100.00, 100, NOW() + INTERVAL '3 months'),
 ('FREESHIP300', 'Free shipping on orders over R300', 'free_shipping', 0.00, 300.00, NULL, NOW() + INTERVAL '1 year'),
 ('SUMMER15', 'Summer special - 15% off', 'percentage', 15.00, 150.00, 50, NOW() + INTERVAL '2 months');
 
--- Insert admin user (password: 'monica123' - should be properly hashed in production)
+-- Insert admin user (password: 'paiton123' - should be properly hashed in production)
 INSERT INTO admin_users (email, password_hash, first_name, last_name) VALUES
-('monica@monicasbows.co.za', '$2b$10$example_hash_here', 'Monica', 'Bow Maker');
+('paiton@paitonsboutique.co.za', '$2b$10$example_hash_here', 'Paiton', 'Bow Maker');

@@ -14,7 +14,7 @@ Any changes you make to your deployed app will be automatically pushed to this r
 
 Your project is live at:
 
-**[https://vercel.com/j4skiis-projects/v0-granny-s-online-store](https://vercel.com/j4skiis-projects/v0-granny-s-online-store)**
+**[https://vercel.com/j4skiis-projects/ecomm-boutique](https://vercel.com/j4skiis-projects/ecomm-boutique)**
 
 ## Build your app
 
