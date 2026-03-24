@@ -21,7 +21,8 @@ CREATE TABLE products (
 -- Customers table
 CREATE TABLE customers (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
+  email TEXT,
+  password_hash TEXT NOT NULL,
   first_name TEXT,
   last_name TEXT,
   phone TEXT,

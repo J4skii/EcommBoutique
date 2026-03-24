@@ -1,6 +1,44 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/database"
 
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const customer_id = searchParams.get("customer_id")
+
+    if (!customer_id) {
+      return NextResponse.json({ error: "Customer ID required" }, { status: 400 })
+    }
+
+    const { data: wishlistItems, error } = await supabase
+      .from("wishlist_items")
+      .select(`
+        *,
+        products (
+          id,
+          name,
+          description,
+          price,
+          stock_quantity,
+          image_url,
+          colors,
+          sizes
+        )
+      `)
+      .eq("customer_id", customer_id)
+
+    if (error) {
+      console.error("Error fetching wishlist:", error)
+      return NextResponse.json({ error: "Failed to fetch wishlist" }, { status: 500 })
+    }
+
+    return NextResponse.json({ wishlistItems })
+  } catch (error) {
+    console.error("Wishlist API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

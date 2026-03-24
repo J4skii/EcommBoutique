@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Package, ShoppingCart, DollarSign, Eye, Edit, Trash2, Loader2, LogOut, FolderOpen, Check, X } from "lucide-react"
+import { Plus, Package, ShoppingCart, DollarSign, Eye, Edit, Trash2, Loader2, LogOut, FolderOpen, Check, X, Upload, Settings, Building2 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
@@ -55,7 +55,95 @@ export default function AdminDashboard() {
   })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  
+
+  // Bank settings state
+  const [bankSettings, setBankSettings] = useState({
+    bank_name: "",
+    account_number: "",
+    account_type: "",
+    branch_code: "",
+    account_holder: "",
+    payment_instructions: "",
+  })
+
+  // Image upload state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Handle image selection
+  const handleImageSelect = (file: File | null) => {
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        alert("Please select an image file")
+        return
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File size must be less than 5MB")
+        return
+      }
+      setSelectedImage(file)
+      // Create preview URL
+      const reader = new FileReader()
+      reader.onload = (e) => setImagePreview(e.target?.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      handleImageSelect(files[0])
+    }
+  }
+
+  // Upload image to server
+  const uploadImage = async (file: File): Promise<string | null> => {
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append("files", file)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        console.error("Upload failed with status:", response.status)
+        return null
+      }
+
+      const data = await response.json()
+      return data.urls?.[0] || null
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      return null
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  // Clear image selection
+  const clearImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
   // Category form state
   const [newCategoryName, setNewCategoryName] = useState("")
   const [newCategoryDescription, setNewCategoryDescription] = useState("")
@@ -65,6 +153,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     checkAuth()
     fetchData()
+    fetchBankSettings()
   }, [])
 
   const checkAuth = () => {
@@ -74,10 +163,55 @@ export default function AdminDashboard() {
     }
   }
 
+  // Fetch bank settings
+  const fetchBankSettings = async () => {
+    try {
+      const response = await fetch("/api/settings")
+      if (response.ok) {
+        const data = await response.json()
+        if (data.settings) {
+          setBankSettings({
+            bank_name: data.settings.bank_name || "",
+            account_number: data.settings.account_number || "",
+            account_type: data.settings.account_type || "",
+            branch_code: data.settings.branch_code || "",
+            account_holder: data.settings.account_holder || "",
+            payment_instructions: data.settings.payment_instructions || "",
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching bank settings:", error)
+    }
+  }
+
+  // Save bank settings
+  const saveBankSettings = async () => {
+    setSubmitting(true)
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: bankSettings }),
+      })
+
+      if (response.ok) {
+        alert("Bank details saved successfully!")
+      } else {
+        alert("Failed to save bank details")
+      }
+    } catch (error) {
+      console.error("Error saving bank settings:", error)
+      alert("Failed to save bank details")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const fetchData = async () => {
     try {
       setLoading(true)
-      
+
       // Fetch products, orders, and categories in parallel
       const [productsRes, ordersRes, categoriesRes] = await Promise.all([
         fetch("/api/products?limit=100&includeInactive=true"),
@@ -228,7 +362,24 @@ export default function AdminDashboard() {
     setSubmitting(true)
 
     const formData = new FormData(e.currentTarget)
-    
+    let imageUrl: string | null = null
+
+    // Determine image URL: either from uploaded file or manually entered URL
+    if (imagePreview) {
+      if (imagePreview.startsWith('http')) {
+        // This is a URL (either from fallback input or already uploaded)
+        imageUrl = imagePreview
+      } else if (imagePreview.startsWith('data:') && selectedImage) {
+        // This is a base64 preview from file upload - try to upload it
+        try {
+          imageUrl = await uploadImage(selectedImage)
+        } catch (error) {
+          console.error("Image upload failed:", error)
+          // Continue without image if upload fails
+        }
+      }
+    }
+
     try {
       const response = await fetch("/api/products", {
         method: "POST",
@@ -239,6 +390,7 @@ export default function AdminDashboard() {
           price: Number(formData.get("price")),
           stock_quantity: Number(formData.get("stock")),
           category_id: formData.get("category_id") || null,
+          image_url: imageUrl,
           is_featured: false,
         }),
       })
@@ -246,8 +398,10 @@ export default function AdminDashboard() {
       if (response.ok) {
         fetchData()
         e.currentTarget.reset()
+        clearImage() // Clear the uploaded image
       } else {
-        alert("Failed to add product")
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to add product")
       }
     } catch (error) {
       console.error("Error adding product:", error)
@@ -352,6 +506,10 @@ export default function AdminDashboard() {
               Categories
             </TabsTrigger>
             <TabsTrigger value="add-product">Add Product</TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-1" />
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* Products Tab */}
@@ -476,8 +634,8 @@ export default function AdminDashboard() {
                         rows={3}
                       />
                     </div>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="w-full bg-pink-600 hover:bg-pink-700"
                       disabled={submitting}
                     >
@@ -504,11 +662,10 @@ export default function AdminDashboard() {
                       <p className="text-gray-500 text-center py-8">No categories yet.</p>
                     ) : (
                       categories.map((category) => (
-                        <div 
-                          key={category.id} 
-                          className={`flex items-center justify-between p-3 border rounded-lg ${
-                            !category.is_active ? "opacity-60 bg-gray-50" : ""
-                          }`}
+                        <div
+                          key={category.id}
+                          className={`flex items-center justify-between p-3 border rounded-lg ${!category.is_active ? "opacity-60 bg-gray-50" : ""
+                            }`}
                         >
                           <div className="flex-1">
                             {editingCategory === category.id ? (
@@ -519,15 +676,15 @@ export default function AdminDashboard() {
                                   className="h-8"
                                   autoFocus
                                 />
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   onClick={() => handleUpdateCategory(category.id)}
                                   className="h-8 px-2"
                                 >
                                   <Check className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   variant="outline"
                                   onClick={() => {
                                     setEditingCategory(null)
@@ -552,11 +709,11 @@ export default function AdminDashboard() {
                               </>
                             )}
                           </div>
-                          
+
                           {editingCategory !== category.id && (
                             <div className="flex gap-1 ml-2">
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => {
                                   setEditingCategory(category.id)
@@ -566,8 +723,8 @@ export default function AdminDashboard() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleToggleCategory(category.id, category.is_active)}
                                 className="h-8 w-8 p-0"
@@ -579,8 +736,8 @@ export default function AdminDashboard() {
                                   <X className="h-4 w-4 text-gray-400" />
                                 )}
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleDeleteCategory(category.id)}
                                 className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -649,19 +806,82 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="image">Product Image URL</Label>
-                    <Input id="image" name="image" placeholder="https://..." />
+                    <Label>Product Image</Label>
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${imagePreview
+                        ? "border-pink-500 bg-pink-50"
+                        : "border-gray-300 hover:border-pink-400 hover:bg-pink-50"
+                        }`}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageSelect(e.target.files?.[0] || null)}
+                      />
+                      {imagePreview ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="max-h-40 mx-auto rounded-md object-contain"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              clearImage()
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="py-4">
+                          <Upload className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-600">
+                            Drag and drop an image here, or click to select
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            PNG, JPG, WebP up to 5MB
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {uploadingImage && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-pink-600">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading image...
+                      </div>
+                    )}
+                    {/* Fallback URL input in case upload fails */}
+                    <div className="mt-2">
+                      <Input
+                        id="image-url"
+                        placeholder="Or enter image URL manually"
+                        onChange={(e) => {
+                          if (e.target.value && !imagePreview) {
+                            setImagePreview(e.target.value)
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
 
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full bg-pink-600 hover:bg-pink-700"
-                    disabled={submitting}
+                    disabled={submitting || uploadingImage}
                   >
-                    {submitting ? (
+                    {submitting || uploadingImage ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Adding...
+                        {uploadingImage ? "Uploading Image..." : "Adding..."}
                       </>
                     ) : (
                       <>
@@ -671,6 +891,97 @@ export default function AdminDashboard() {
                     )}
                   </Button>
                 </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Bank Details for EFT Payments
+                </CardTitle>
+                <CardDescription>
+                  Configure the bank account details that customers will see when choosing Direct EFT payment option.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="bank_name">Bank Name</Label>
+                    <Input
+                      id="bank_name"
+                      value={bankSettings.bank_name}
+                      onChange={(e) => setBankSettings({ ...bankSettings, bank_name: e.target.value })}
+                      placeholder="e.g., First National Bank"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_holder">Account Holder Name</Label>
+                    <Input
+                      id="account_holder"
+                      value={bankSettings.account_holder}
+                      onChange={(e) => setBankSettings({ ...bankSettings, account_holder: e.target.value })}
+                      placeholder="e.g., Monica's Bow Boutique"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_number">Account Number</Label>
+                    <Input
+                      id="account_number"
+                      value={bankSettings.account_number}
+                      onChange={(e) => setBankSettings({ ...bankSettings, account_number: e.target.value })}
+                      placeholder="e.g., 1234567890"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_type">Account Type</Label>
+                    <Input
+                      id="account_type"
+                      value={bankSettings.account_type}
+                      onChange={(e) => setBankSettings({ ...bankSettings, account_type: e.target.value })}
+                      placeholder="e.g., Cheque, Savings, Current"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="branch_code">Branch Code</Label>
+                    <Input
+                      id="branch_code"
+                      value={bankSettings.branch_code}
+                      onChange={(e) => setBankSettings({ ...bankSettings, branch_code: e.target.value })}
+                      placeholder="e.g., 123456"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="payment_instructions">Payment Instructions</Label>
+                  <Textarea
+                    id="payment_instructions"
+                    value={bankSettings.payment_instructions}
+                    onChange={(e) => setBankSettings({ ...bankSettings, payment_instructions: e.target.value })}
+                    placeholder="Instructions shown to customers after checkout (e.g., Please make payment within 48 hours...)"
+                    rows={3}
+                  />
+                </div>
+                <Button
+                  onClick={saveBankSettings}
+                  disabled={submitting}
+                  className="w-full mt-6 bg-pink-600 hover:bg-pink-700"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Save Bank Details
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

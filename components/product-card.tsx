@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, ShoppingCart, Check, Loader2 } from "lucide-react"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface Product {
   id: string
@@ -36,6 +36,36 @@ export function ProductCard({ product }: ProductCardProps) {
   const [isLiked, setIsLiked] = useState(false)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [isLoadingWishlist, setIsLoadingWishlist] = useState(true)
+
+  // Check if product is in wishlist on mount
+  useEffect(() => {
+    const checkWishlist = async () => {
+      const customerId = getCustomerId()
+      if (!customerId) {
+        setIsLoadingWishlist(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/wishlist?customer_id=${customerId}`)
+        const data = await response.json()
+
+        if (response.ok && data.wishlistItems) {
+          const isInWishlist = data.wishlistItems.some(
+            (item: any) => item.product_id === product.id || item.products?.id === product.id
+          )
+          setIsLiked(isInWishlist)
+        }
+      } catch (error) {
+        console.error("Error checking wishlist:", error)
+      } finally {
+        setIsLoadingWishlist(false)
+      }
+    }
+
+    checkWishlist()
+  }, [product.id])
 
   const handleAddToCart = async () => {
     const customerId = getCustomerId()
@@ -58,7 +88,7 @@ export function ProductCard({ product }: ProductCardProps) {
       if (response.ok) {
         setShowSuccess(true)
         setTimeout(() => setShowSuccess(false), 2000)
-        
+
         // Dispatch event to update cart count in header
         window.dispatchEvent(new Event("cart-updated"))
       } else {
@@ -73,9 +103,38 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   }
 
-  const handleToggleWishlist = () => {
+  const handleToggleWishlist = async () => {
+    const customerId = getCustomerId()
+    if (!customerId) {
+      alert("Please log in to save items to your wishlist")
+      return
+    }
+
+    // Optimistic update
+    const wasLiked = isLiked
     setIsLiked(!isLiked)
-    // TODO: Connect to wishlist API
+
+    try {
+      if (wasLiked) {
+        // Remove from wishlist
+        await fetch("/api/wishlist", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customer_id: customerId, product_id: product.id })
+        })
+      } else {
+        // Add to wishlist
+        await fetch("/api/wishlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customer_id: customerId, product_id: product.id })
+        })
+      }
+    } catch (error) {
+      console.error("Wishlist error:", error)
+      // Revert on error
+      setIsLiked(wasLiked)
+    }
   }
 
   const inStock = product.stock_quantity > 0
@@ -91,9 +150,14 @@ export function ProductCard({ product }: ProductCardProps) {
         />
         <button
           onClick={handleToggleWishlist}
-          className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+          disabled={isLoadingWishlist}
+          className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors disabled:opacity-50"
         >
-          <Heart className={`h-4 w-4 ${isLiked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
+          {isLoadingWishlist ? (
+            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          ) : (
+            <Heart className={`h-4 w-4 ${isLiked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
+          )}
         </button>
         {!inStock && (
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
@@ -131,11 +195,10 @@ export function ProductCard({ product }: ProductCardProps) {
           {inStock ? (
             <Button
               size="sm"
-              className={`rounded-full px-4 transition-all ${
-                showSuccess
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-pink-600 hover:bg-pink-700"
-              }`}
+              className={`rounded-full px-4 transition-all ${showSuccess
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-pink-600 hover:bg-pink-700"
+                }`}
               onClick={handleAddToCart}
               disabled={isAddingToCart || showSuccess}
             >

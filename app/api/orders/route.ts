@@ -5,6 +5,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get("status")
   const limit = searchParams.get("limit")
+  const customer_id = searchParams.get("customer_id")
+  const customer_email = searchParams.get("customer_email")
 
   try {
     let query = supabase
@@ -20,6 +22,14 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       query = query.eq("status", status)
+    }
+
+    if (customer_id) {
+      query = query.eq("customer_id", customer_id)
+    }
+
+    if (customer_email) {
+      query = query.eq("customer_email", customer_email)
     }
 
     if (limit) {

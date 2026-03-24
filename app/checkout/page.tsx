@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CreditCard, Truck, Shield, ArrowLeft, Loader2 } from "lucide-react"
+import { Truck, Shield, ArrowLeft, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -39,7 +39,7 @@ const getCustomerId = () => {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const [paymentMethod, setPaymentMethod] = useState("payfast")
+  const [paymentMethod, setPaymentMethod] = useState("eft")
   const [sameAsShipping, setSameAsShipping] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -120,6 +120,7 @@ export default function CheckoutPage() {
             province: formData.get("billProvince"),
             postal_code: formData.get("billPostal"),
           },
+          payment_method: paymentMethod,
         }),
       })
 
@@ -129,22 +130,145 @@ export default function CheckoutPage() {
         throw new Error(data.error || "Checkout failed")
       }
 
-      if (data.paymentUrl && data.paymentData) {
-        // Create and submit PayFast form
-        const form = document.createElement("form")
-        form.method = "POST"
-        form.action = data.paymentUrl
+      if (data.order) {
+        // Save order to localStorage for confirmation page
+        localStorage.setItem("lastOrder", JSON.stringify(data.order))
+        localStorage.setItem("lastPaymentMethod", paymentMethod)
 
-        Object.entries(data.paymentData).forEach(([key, value]) => {
-          const input = document.createElement("input")
-          input.type = "hidden"
-          input.name = key
-          input.value = value as string
-          form.appendChild(input)
-        })
+        // If EFT, store the bank details
+        if (data.eftDetails) {
+          localStorage.setItem("lastEftDetails", JSON.stringify(data.eftDetails))
+        }
 
-        document.body.appendChild(form)
-        form.submit()
+        // If PayFast, store payment data and handle modal
+        if (paymentMethod === "payfast" && data.payfast) {
+          localStorage.setItem("lastPayfastData", JSON.stringify(data.payfast))
+
+          // Check if there was an error initializing PayFast
+          if (data.payfast.error) {
+            const errorMsg = data.payfast.details || data.payfast.error
+            console.error("PayFast initialization error:", errorMsg)
+            console.log("PayFast paymentData available:", !!data.payfast.paymentData)
+            console.log("PayFast paymentData:", data.payfast.paymentData)
+
+            // Check if we should fall back to redirect payment
+            if (data.payfast.paymentData) {
+              // Fall back to redirect payment method
+              console.log("Falling back to PayFast redirect payment...")
+              const isSandbox = process.env.NODE_ENV !== 'production'
+              const payfastRedirectUrl = isSandbox
+                ? "https://sandbox.payfast.co.za/eng/process"
+                : "https://www.payfast.co.za/eng/process"
+
+              const form = document.createElement("form")
+              form.method = "POST"
+              form.action = payfastRedirectUrl
+
+              for (const [key, value] of Object.entries(data.payfast.paymentData || {})) {
+                const input = document.createElement("input")
+                input.type = "hidden"
+                input.name = key
+                input.value = String(value)
+                form.appendChild(input)
+              }
+
+              document.body.appendChild(form)
+              form.submit()
+              return
+            }
+
+            throw new Error(errorMsg)
+          }
+
+          // Use Onsite Payments modal
+          if (data.payfast.uuid) {
+            // Load PayFast script dynamically
+            const isSandbox = process.env.NODE_ENV !== 'production'
+            const payfastScriptUrl = isSandbox
+              ? "https://sandbox.payfast.co.za/onsite/engine.js"
+              : "https://www.payfast.co.za/onsite/engine.js"
+
+            console.log("Loading PayFast script from:", payfastScriptUrl)
+
+            const loadPayFastScript = () => {
+              return new Promise<void>((resolve, reject) => {
+                if ((window as any).payfast_do_onsite_payment) {
+                  resolve()
+                  return
+                }
+
+                const script = document.createElement("script")
+                script.src = payfastScriptUrl
+                script.onload = () => resolve()
+                script.onerror = () => reject(new Error("Failed to load PayFast"))
+                document.head.appendChild(script)
+              })
+            }
+
+            try {
+              await loadPayFastScript()
+              console.log("PayFast script loaded successfully")
+
+              // Get the PayFast function
+              const payfastPayment = (window as any).payfast_do_onsite_payment
+              console.log("PayFast payment function available:", !!payfastPayment)
+              console.log("PayFast UUID:", data.payfast.uuid)
+
+              if (payfastPayment) {
+                // Trigger the modal
+                payfastPayment(
+                  { uuid: data.payfast.uuid },
+                  (result: boolean) => {
+                    console.log("PayFast callback result:", result)
+                    if (result === true) {
+                      // Payment successful - redirect to success page
+                      router.push("/payment/success")
+                    } else {
+                      // Payment cancelled or failed
+                      setError("Payment was cancelled. Please try again or choose another payment method.")
+                      setIsProcessing(false)
+                    }
+                  }
+                )
+                // Don't proceed to success page - wait for callback
+                console.log("PayFast modal triggered, waiting for callback...")
+                return
+              } else {
+                throw new Error("PayFast payment function not available")
+              }
+            } catch (payError) {
+              console.error("PayFast modal error:", payError)
+              // Fall back to redirect if modal fails
+              if (data.payfast.paymentData) {
+                // Use the redirect payment method instead
+                const isSandbox = process.env.NODE_ENV !== 'production'
+                const payfastRedirectUrl = isSandbox
+                  ? "https://sandbox.payfast.co.za/eng/process"
+                  : "https://www.payfast.co.za/eng/process"
+
+                const form = document.createElement("form")
+                form.method = "POST"
+                form.action = payfastRedirectUrl
+
+                for (const [key, value] of Object.entries(data.payfast.paymentData || {})) {
+                  const input = document.createElement("input")
+                  input.type = "hidden"
+                  input.name = key
+                  input.value = String(value)
+                  form.appendChild(input)
+                }
+
+                document.body.appendChild(form)
+                form.submit()
+                return
+              }
+              throw new Error("PayFast payment initialization failed")
+            }
+          }
+        }
+
+        // Redirect to success page
+        router.push("/payment/success")
       } else {
         throw new Error("Payment initialization failed")
       }
@@ -370,26 +494,31 @@ export default function CheckoutPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Select how you would like to pay for your order.
+                  </p>
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                     <div className="flex items-center space-x-2 p-4 border border-pink-200 rounded-lg">
                       <RadioGroupItem value="payfast" id="payfast" />
                       <Label htmlFor="payfast" className="flex-1 cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">PayFast</p>
-                            <p className="text-sm text-gray-600">Secure payment with card or EFT</p>
-                          </div>
-                          <CreditCard className="h-5 w-5 text-gray-400" />
+                        <div>
+                          <p className="font-medium">PayFast - Secure Online Payment</p>
+                          <p className="text-sm text-gray-600">
+                            Pay securely with credit card, debit card, or instant EFT.
+                            You'll be redirected to complete payment.
+                          </p>
                         </div>
                       </Label>
                     </div>
-
-                    <div className="flex items-center space-x-2 p-4 border border-pink-200 rounded-lg mt-2">
+                    <div className="flex items-center space-x-2 p-4 border border-pink-200 rounded-lg">
                       <RadioGroupItem value="eft" id="eft" />
                       <Label htmlFor="eft" className="flex-1 cursor-pointer">
                         <div>
-                          <p className="font-medium">Direct EFT</p>
-                          <p className="text-sm text-gray-600">Bank transfer (manual verification)</p>
+                          <p className="font-medium">Direct Bank Transfer (EFT)</p>
+                          <p className="text-sm text-gray-600">
+                            You will receive bank details on the confirmation page to complete your payment.
+                            Email proof of payment to info@monicasbowboutique.co.za
+                          </p>
                         </div>
                       </Label>
                     </div>
@@ -468,9 +597,9 @@ export default function CheckoutPage() {
                     </ul>
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-pink-600 hover:bg-pink-700 mt-6" 
+                  <Button
+                    type="submit"
+                    className="w-full bg-pink-600 hover:bg-pink-700 mt-6"
                     disabled={isProcessing}
                   >
                     {isProcessing ? (
