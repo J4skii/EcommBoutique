@@ -15,20 +15,15 @@ All secrets **must** be configured as environment variables in the Vercel dashbo
    - `PAYFAST_MERCHANT_KEY` – your production merchant key
    - `PAYFAST_PASSPHRASE` – your production passphrase (leave blank if not set on your account)
 
-2. **Stripe Production** – from https://dashboard.stripe.com:
-   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` – live publishable key (`pk_live_…`)
-   - `STRIPE_SECRET_KEY` – live secret key (`sk_live_…`)
-   - `STRIPE_WEBHOOK_SECRET` – live webhook secret
-
-3. **Site URL**:
+2. **Site URL**:
    - `NEXT_PUBLIC_SITE_URL` – your domain (e.g., `https://monicasbowboutique.co.za`)
 
-4. **Supabase**:
+3. **Supabase**:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
 
-5. **Email (Resend)**:
+4. **Email (Resend)**:
    - `RESEND_API_KEY`
 
 > ⚠️ `.env.production` is **not** tracked in git. Do not commit env files with real secrets.
