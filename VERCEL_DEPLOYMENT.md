@@ -13,15 +13,10 @@
    - `PAYFAST_MERCHANT_KEY` - Your production merchant key  
    - `PAYFAST_PASSPHRASE` - Your production passphrase
 
-2. **Stripe Production** - Get from https://dashboard.stripe.com:
-   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Live publishable key (pk_live_...)
-   - `STRIPE_SECRET_KEY` - Live secret key (sk_live_...)
-   - `STRIPE_WEBHOOK_SECRET` - Live webhook secret
-
-3. **Site URL**:
+2. **Site URL**:
    - `NEXT_PUBLIC_SITE_URL` - Your domain (e.g., https://monicasbowboutique.co.za)
 
-4. **Supabase** - Already configured, same as dev
+3. **Supabase** - Already configured, same as dev
 
 ## Step 2: Deploy to Vercel
 
