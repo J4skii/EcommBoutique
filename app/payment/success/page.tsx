@@ -2,33 +2,46 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, Package, Mail, Loader2 } from "lucide-react"
+import { CheckCircle, Clock, Package, Mail, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
+
+interface OrderStatus {
+  order_number: string
+  status: string
+  payment_status: string
+  payment_method: string | null
+  total_amount: number
+}
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null)
   const [eftDetails, setEftDetails] = useState<any>(null)
+  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const verifyPayment = async () => {
-      const sessionId = searchParams.get("session_id")
+    const loadOrder = async () => {
       const orderParam = searchParams.get("order")
+      const sessionId = searchParams.get("session_id")
 
-      // Check for EFT payment details from localStorage
+      // Resolve order number: URL param takes priority over localStorage
+      let resolvedOrderNumber: string | null = orderParam ?? null
+
       const lastOrder = localStorage.getItem("lastOrder")
       const lastPaymentMethod = localStorage.getItem("lastPaymentMethod")
       const lastEftDetails = localStorage.getItem("lastEftDetails")
 
-      if (lastOrder) {
+      if (!resolvedOrderNumber && lastOrder) {
         try {
-          const order = JSON.parse(lastOrder)
-          setOrderNumber(order.order_number)
-        } catch (e) { }
+          const parsed = JSON.parse(lastOrder)
+          resolvedOrderNumber = parsed.order_number ?? null
+        } catch (e) {
+          console.error("Error parsing lastOrder from localStorage:", e)
+        }
       }
 
       if (lastPaymentMethod) {
@@ -38,32 +51,51 @@ export default function PaymentSuccessPage() {
       if (lastEftDetails) {
         try {
           setEftDetails(JSON.parse(lastEftDetails))
-        } catch (e) { }
+        } catch (e) {
+          console.error("Error parsing lastEftDetails from localStorage:", e)
+        }
       }
 
-      // Check for order number from URL (for PayFast redirect)
-      if (orderParam) {
-        setOrderNumber(orderParam)
-      }
-
+      // Legacy: verify Stripe session
       if (sessionId) {
         try {
           const response = await fetch(`/api/payment/verify?session_id=${sessionId}`)
           if (response.ok) {
             const data = await response.json()
             if (data.order_number) {
-              setOrderNumber(data.order_number)
+              resolvedOrderNumber = data.order_number
             }
           }
         } catch (error) {
-          console.error("Error verifying payment:", error)
+          console.error("Error verifying payment session:", error)
+        }
+      }
+
+      setOrderNumber(resolvedOrderNumber)
+
+      // Fetch real order status from the database
+      if (resolvedOrderNumber) {
+        try {
+          const res = await fetch(
+            `/api/orders/by-number?order_number=${encodeURIComponent(resolvedOrderNumber)}`
+          )
+          if (res.ok) {
+            const json = await res.json()
+            setOrderStatus(json.order ?? null)
+            // Sync payment method from DB if not already set from localStorage
+            if (!lastPaymentMethod && json.order?.payment_method) {
+              setPaymentMethod(json.order.payment_method)
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching order status:", error)
         }
       }
 
       setLoading(false)
     }
 
-    verifyPayment()
+    loadOrder()
   }, [searchParams])
 
   if (loading) {
@@ -71,28 +103,60 @@ export default function PaymentSuccessPage() {
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
         <div className="container mx-auto max-w-2xl px-4 text-center">
           <Loader2 className="h-12 w-12 text-pink-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Verifying payment...</p>
+          <p className="text-gray-600">Loading order details...</p>
         </div>
       </div>
     )
   }
+
+  const isPaid = orderStatus?.payment_status === "paid"
+  const isFailed = orderStatus?.payment_status === "failed"
+  const isEft = paymentMethod === "eft"
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
       <div className="container mx-auto max-w-2xl px-4">
         <Card className="border-pink-100">
           <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="h-10 w-10 text-green-600" />
-            </div>
-
-            <h1 className="text-3xl font-light text-gray-800 mb-4">
-              Payment <span className="font-semibold text-pink-600">Successful!</span>
-            </h1>
-
-            <p className="text-gray-600 mb-6">
-              Thank you for your order! We've received your payment and Paiton is already preparing your beautiful bows.
-            </p>
+            {isFailed ? (
+              <>
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <AlertCircle className="h-10 w-10 text-red-600" />
+                </div>
+                <h1 className="text-3xl font-light text-gray-800 mb-4">
+                  Payment <span className="font-semibold text-red-600">Failed</span>
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  Your payment could not be processed. Please try again or contact us for assistance.
+                </p>
+              </>
+            ) : isPaid ? (
+              <>
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="h-10 w-10 text-green-600" />
+                </div>
+                <h1 className="text-3xl font-light text-gray-800 mb-4">
+                  Payment <span className="font-semibold text-pink-600">Successful!</span>
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  Thank you for your order! We've received your payment and Paiton is already preparing your beautiful bows.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Clock className="h-10 w-10 text-yellow-600" />
+                </div>
+                <h1 className="text-3xl font-light text-gray-800 mb-4">
+                  Order <span className="font-semibold text-pink-600">Received</span>
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  {isEft
+                    ? "Thank you! Your order has been placed. Please complete the bank transfer below to confirm your order."
+                    : "Thank you for your order! Your payment is pending confirmation. We'll email you once it's confirmed."}
+                </p>
+              </>
+            )}
 
             {orderNumber && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -102,7 +166,7 @@ export default function PaymentSuccessPage() {
             )}
 
             {/* EFT Payment Details */}
-            {paymentMethod === "eft" && eftDetails && (
+            {isEft && eftDetails && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-left">
                 <h3 className="font-semibold text-yellow-800 mb-4">Bank Transfer Details</h3>
                 <p className="text-sm text-yellow-700 mb-4">
@@ -128,7 +192,11 @@ export default function PaymentSuccessPage() {
                 <Mail className="h-5 w-5 text-pink-600 mt-0.5" />
                 <div>
                   <p className="font-medium text-gray-800">Confirmation Email</p>
-                  <p className="text-sm text-gray-600">You'll receive an email confirmation shortly with your order details.</p>
+                  <p className="text-sm text-gray-600">
+                    {isPaid
+                      ? "A confirmation email has been sent with your order details."
+                      : "You'll receive an email confirmation once your payment is verified."}
+                  </p>
                 </div>
               </div>
 

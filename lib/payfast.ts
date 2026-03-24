@@ -34,21 +34,25 @@ export interface OnsitePaymentData {
 export class PayFastService {
   private merchantId: string
   private merchantKey: string
-  private passphrase: string
+  private passphrase: string | undefined
   private sandbox: boolean
 
   constructor() {
-    this.merchantId = process.env.PAYFAST_MERCHANT_ID!
-    this.merchantKey = process.env.PAYFAST_MERCHANT_KEY!
-    this.passphrase = process.env.PAYFAST_PASSPHRASE!
+    this.merchantId = process.env.PAYFAST_MERCHANT_ID || ""
+    this.merchantKey = process.env.PAYFAST_MERCHANT_KEY || ""
+    this.passphrase = process.env.PAYFAST_PASSPHRASE || undefined
     this.sandbox = process.env.NODE_ENV !== "production"
 
     if (!this.merchantId || !this.merchantKey) {
-      throw new Error("PayFast credentials not configured")
+      throw new Error("PayFast credentials not configured: PAYFAST_MERCHANT_ID and PAYFAST_MERCHANT_KEY are required")
     }
   }
 
-  generateSignature(data: Record<string, string>, passphrase: string = ''): string {
+  getMerchantId(): string {
+    return this.merchantId
+  }
+
+  generateSignature(data: Record<string, string>, passphrase?: string): string {
     // PayFast signature: Sort alphabetically, skip empty values, use + for spaces
     const pairs: string[] = []
     const sortedKeys = Object.keys(data).sort()
@@ -66,11 +70,10 @@ export class PayFastService {
     let signatureString = pairs.join('&')
 
     // Append passphrase if set
-    if (passphrase) {
-      signatureString += `&passphrase=${encodeURIComponent(passphrase)}`
+    const effectivePassphrase = passphrase !== undefined ? passphrase : this.passphrase
+    if (effectivePassphrase) {
+      signatureString += `&passphrase=${encodeURIComponent(effectivePassphrase)}`
     }
-
-    console.log('String to hash:', signatureString)
 
     return crypto.createHash('md5').update(signatureString).digest('hex')
   }
@@ -223,15 +226,10 @@ export class PayFastService {
   async createOnsitePaymentIdentifier(orderData: OnsitePaymentData): Promise<{ uuid: string; paymentData: Record<string, string> }> {
     const paymentData = this.createOnsitePaymentData(orderData)
 
-    // Log payment data for debugging
-    console.log("PayFast payment data:", paymentData)
-
     // Convert to URL-encoded string
     const paramString = Object.entries(paymentData)
       .map(([key, value]) => `${key}=${encodeURIComponent(value).replace(/%20/g, '+')}`)
       .join('&')
-
-    console.log("PayFast param string:", paramString)
 
     const url = this.getOnsitePaymentUrl()
     console.log("PayFast API URL:", url)
@@ -245,20 +243,16 @@ export class PayFastService {
         body: paramString,
       })
 
-      console.log("PayFast response status:", response.status)
-      console.log("PayFast response status text:", response.statusText)
-
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("PayFast error response:", errorText)
+        console.error("PayFast API error:", response.status)
         throw new Error(`PayFast API error: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
-      console.log("PayFast response data:", data)
 
       if (!data.uuid) {
-        throw new Error('No UUID returned from PayFast. Response: ' + JSON.stringify(data))
+        throw new Error('No UUID returned from PayFast')
       }
 
       return { uuid: data.uuid, paymentData }
@@ -268,28 +262,46 @@ export class PayFastService {
     }
   }
 
-  validateSignature(data: Record<string, string>, receivedSignature: string): boolean {
-    const { signature, ...dataWithoutSignature } = data
+  /**
+   * Validate the signature on an incoming IPN payload.
+   * Uses the same passphrase that was used when generating the outgoing signature.
+   * @param data  Full IPN payload (may include "signature" key — it will be stripped)
+   * @param receivedSignature  The signature value sent by PayFast
+   */
+  validateSignature(data: Record<string, string>, receivedSignature: string | undefined): boolean {
+    if (!receivedSignature) {
+      console.error("PayFast IPN: missing signature")
+      return false
+    }
+    const { signature: _sig, ...dataWithoutSignature } = data
+    // Use the instance passphrase so validation matches generation
     const calculatedSignature = this.generateSignature(dataWithoutSignature)
     return calculatedSignature === receivedSignature
   }
 
-  // Additional PayFast security checks
-  validateIPNRequest(requestHeaders: Headers, clientIP: string): boolean {
-    // Check if request is from PayFast
-    const validHosts = ["www.payfast.co.za", "sandbox.payfast.co.za"]
+  /**
+   * Perform PayFast server-side IPN validation by POSTing the raw payload
+   * back to PayFast's validation endpoint.
+   * Returns true only when PayFast responds with "VALID".
+   */
+  async validateWithPayFast(rawBody: string): Promise<boolean> {
+    const validateUrl = this.sandbox
+      ? "https://sandbox.payfast.co.za/eng/query/validate"
+      : "https://www.payfast.co.za/eng/query/validate"
 
-    // In production, validate the source IP
-    // PayFast publishes a list of valid IPs
-    const payfastIPs = [
-      "52.31.114.135",
-      "52.49.113.86",
-      "52.49.114.205",
-      "52.211.133.67",
-      "52.211.146.217"
-    ]
+    try {
+      const response = await fetch(validateUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: rawBody,
+      })
 
-    return payfastIPs.includes(clientIP)
+      const text = await response.text()
+      return text.trim().toUpperCase() === "VALID"
+    } catch (error) {
+      console.error("PayFast server validation request failed:", error)
+      return false
+    }
   }
 }
 

@@ -6,22 +6,32 @@
 
 ## Step 1: Prepare Your Production Environment
 
-### Update `.env.production` with your real credentials:
+All secrets **must** be configured as environment variables in the Vercel dashboard — never commit them to the repository.
 
-1. **PayFast Production** - Get from https://www.payfast.co.za:
-   - `PAYFAST_MERCHANT_ID` - Your production merchant ID
-   - `PAYFAST_MERCHANT_KEY` - Your production merchant key  
-   - `PAYFAST_PASSPHRASE` - Your production passphrase
+### Set the following variables in Vercel → Project → Settings → Environment Variables:
 
-2. **Stripe Production** - Get from https://dashboard.stripe.com:
-   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Live publishable key (pk_live_...)
-   - `STRIPE_SECRET_KEY` - Live secret key (sk_live_...)
-   - `STRIPE_WEBHOOK_SECRET` - Live webhook secret
+1. **PayFast Production** – from https://www.payfast.co.za:
+   - `PAYFAST_MERCHANT_ID` – your production merchant ID
+   - `PAYFAST_MERCHANT_KEY` – your production merchant key
+   - `PAYFAST_PASSPHRASE` – your production passphrase (leave blank if not set on your account)
+
+2. **Stripe Production** – from https://dashboard.stripe.com:
+   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` – live publishable key (`pk_live_…`)
+   - `STRIPE_SECRET_KEY` – live secret key (`sk_live_…`)
+   - `STRIPE_WEBHOOK_SECRET` – live webhook secret
 
 3. **Site URL**:
-   - `NEXT_PUBLIC_SITE_URL` - Your domain (e.g., https://monicasbowboutique.co.za)
+   - `NEXT_PUBLIC_SITE_URL` – your domain (e.g., `https://monicasbowboutique.co.za`)
 
-4. **Supabase** - Already configured, same as dev
+4. **Supabase**:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+
+5. **Email (Resend)**:
+   - `RESEND_API_KEY`
+
+> ⚠️ `.env.production` is **not** tracked in git. Do not commit env files with real secrets.
 
 ## Step 2: Deploy to Vercel
 
@@ -30,16 +40,7 @@
 1. Go to https://vercel.com and sign in
 2. Click "Add New..." → "Project"
 3. Import your GitHub repository
-4. In "Environment Variables", add each variable from `.env.production`:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://wvrmboairexupuozcwup.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_HqHByKvnYtEIBeB-SG4p1Q_k_1tG53X
-   PAYFAST_MERCHANT_ID=your_production_merchant_id
-   PAYFAST_MERCHANT_KEY=your_production_merchant_key
-   PAYFAST_PASSPHRASE=your_production_passphrase
-   NEXT_PUBLIC_SITE_URL=https://your-domain.co.za
-   NEXT_PUBLIC_SITE_NAME=Monica's Bow Boutique
-   ```
+4. In "Environment Variables", add each variable listed in Step 1 above.
 5. Click "Deploy"
 
 ### Option B: Deploy with Vercel CLI
