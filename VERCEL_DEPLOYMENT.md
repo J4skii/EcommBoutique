@@ -53,6 +53,20 @@ vercel --prod
 
 Follow the prompts to add environment variables.
 
+### IMPORTANT: Set Correct Production Branch
+
+⚠️ Before deploying, verify your Vercel project is using the **main** branch:
+
+1. Go to Vercel Dashboard → Your Project → Settings → Git
+2. Under "Production Branch", ensure it shows **main** (NOT "master")
+3. If it's set to something else, change it to "main" and save
+4. Then trigger a new deployment by clicking "Redeploy" or pushing to main:
+
+```bash
+git checkout main
+git push origin main
+```
+
 ## Step 3: Configure PayFast for Production
 
 1. Log into PayFast merchant dashboard: https://www.payfast.co.za

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, Clock, Package, Mail, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 
 interface OrderStatus {
   order_number: string
@@ -15,7 +15,7 @@ interface OrderStatus {
   total_amount: number
 }
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null)
@@ -223,5 +223,20 @@ export default function PaymentSuccessPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
+        <div className="container mx-auto max-w-2xl px-4 text-center">
+          <Loader2 className="h-12 w-12 text-pink-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading order details...</p>
+        </div>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }
