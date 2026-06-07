@@ -2,8 +2,8 @@
 
 **Project**: EcommBoutique (Paitons Boutique)  
 **Type**: E-commerce Website for Handcrafted Accessories  
-**Version**: 1.0.0  
-**Date**: February 2026  
+**Version**: 1.1.0  
+**Date**: June 2026  
 **Developer**: [Your Name]  
 **Client**: Paitons Boutique
 
@@ -852,16 +852,35 @@ EcommBoutique/
 | Endpoint | Method | Purpose | Auth |
 |----------|--------|---------|------|
 | `/api/auth/login` | POST | Customer login | No |
-| `/api/auth/signup` | POST | Customer signup | No |
+| `/api/auth/signup` | POST | Customer registration + sends verification email | No |
+| `/api/auth/verify-email` | GET | Verify email token | No |
+| `/api/auth/verify-email` | POST | Resend verification email | No |
+| `/api/auth/forgot-password` | POST | Send reset link (always 200) | No |
+| `/api/auth/reset-password` | POST | Set new password via HMAC token | No |
 | `/api/categories` | GET | List categories | No |
 | `/api/categories` | POST | Create category | Admin |
-| `/api/products` | GET | List products | No |
+| `/api/products` | GET | List products (supports `?search=`, `?category=`) | No |
 | `/api/products` | POST | Create product | Admin |
-| `/api/cart` | GET/POST | Cart operations | Customer |
-| `/api/checkout` | POST | Create order | Customer |
-| `/api/orders` | GET | List orders | Admin |
-| `/api/admin/login` | POST | Admin login | No |
-| `/api/payment/notify` | POST | PayFast webhook | No |
+| `/api/products/[id]` | GET | Single product with images | No |
+| `/api/products/[id]` | PATCH | Update product | Admin |
+| `/api/products/[id]` | DELETE | Soft-delete product | Admin |
+| `/api/products/[id]/images` | GET/POST | Product image management | Admin |
+| `/api/products/[id]/variants` | GET/POST | Product variant management | Admin |
+| `/api/cart` | GET | Fetch cart by `customer_id` | Customer |
+| `/api/cart` | POST | Add/upsert cart item | Customer |
+| `/api/cart` | DELETE | Remove single item | Customer |
+| `/api/cart` | PUT | Clear entire cart | Customer |
+| `/api/wishlist` | GET | Fetch wishlist | Customer |
+| `/api/wishlist` | POST | Add to wishlist | Customer |
+| `/api/wishlist` | DELETE | Remove from wishlist | Customer |
+| `/api/checkout` | POST | Validate stock, create order, return PayFast form | Customer |
+| `/api/orders` | GET | List orders | Admin/Customer |
+| `/api/contact` | POST | Send contact email via Resend | No |
+| `/api/admin/login` | POST | Admin login (sets httpOnly cookie) | No |
+| `/api/admin/logout` | POST | Admin logout (clears cookie) | Admin |
+| `/api/payment/notify` | POST | PayFast IPN webhook | PayFast IPs |
+| `/api/staff` | GET/POST | Staff management | Admin |
+| `/api/staff/[id]` | PATCH/DELETE | Update/remove staff | Admin |
 
 ### C. Database Schema
 
@@ -882,10 +901,95 @@ See `.env.example` in project root.
 
 ---
 
+## 14. V1.1 TECHNICAL NOTES (June 2026)
+
+This section documents the architecture decisions and implementation details added in version 1.1.
+
+### 14.1 Server / Client Component Split (SEO + Suspense)
+
+Next.js 15 requires `useSearchParams()` to be inside a `<Suspense>` boundary, and pages that export `metadata` / `generateMetadata` cannot be client components.
+
+**Pattern used across three pages:**
+
+```
+app/products/page.tsx            ← Server component: exports metadata, wraps in <Suspense>
+app/products/_products-content.tsx  ← "use client": all state, hooks, API calls
+
+app/search/page.tsx              ← Server component: exports metadata, wraps in <Suspense>
+app/search/_search-content.tsx   ← "use client": all state, hooks, API calls
+
+app/products/[id]/page.tsx       ← Server component: generateMetadata fetches product server-side
+app/products/[id]/_product-detail-client.tsx  ← "use client": all interactivity
+```
+
+`generateMetadata` in the product detail page makes a direct Supabase query (using the anon client with the public key) to get product name, description, and image for real Open Graph tags.
+
+### 14.2 HMAC Stateless Tokens (`lib/tokens.ts`)
+
+Used for email verification and password reset — no extra DB tables needed.
+
+**Token format:** `base64url(payload).hmac_signature`
+
+**Payload fields:**
+- `exp` — Unix timestamp expiry
+- For password reset: `pwdFingerprint` — first 8 chars of the current bcrypt hash
+
+**Single-use enforcement:** The `pwdFingerprint` in the reset token is compared against the current hash at verification time. Once the password is changed, the fingerprint no longer matches and the token is invalid. No token blacklist table needed.
+
+### 14.3 Rate Limiting (`lib/rate-limit.ts`)
+
+Sliding window implementation using an in-memory `Map`. Suitable for single-instance boutique deployments on Vercel (serverless functions are single-process per region).
+
+**Limits:**
+- Login: 10 attempts / IP / 15 minutes
+- Signup: 5 attempts / IP / hour
+- Forgot password: 3 attempts / IP / hour
+
+Returns `429 Too Many Requests` with `X-RateLimit-Reset` and `Retry-After` headers.
+
+> Note: For multi-region or high-traffic deployments, replace with a Redis-backed solution (e.g. Upstash).
+
+### 14.4 Stock Management (`app/api/checkout/route.ts`)
+
+Two-phase approach without a full DB transaction:
+
+**Phase 1 — Pre-validation (before order creation):**
+```
+for each item:
+  fetch product { name, stock_quantity, is_active }
+  if !is_active → return 400 "Product unavailable"
+  if stock_quantity < item.quantity → return 400 "Insufficient stock"
+```
+
+**Phase 2 — Decrement (after order items inserted):**
+```
+for each item:
+  fetch current stock_quantity
+  update stock_quantity = max(0, current - item.quantity)
+    WHERE stock_quantity >= item.quantity   ← optimistic lock
+```
+
+The `.gte` filter is the optimistic lock — if another request depleted stock between Phase 1 and Phase 2, the update silently no-ops rather than going negative. For a high-concurrency scenario, a Supabase RPC with `BEGIN/COMMIT` would be stronger.
+
+### 14.5 Contact Form Error Handling (`app/api/contact/route.ts`)
+
+**Owner notification** — `await`ed directly. If Resend fails, the error propagates to the outer try/catch and the API returns `500` — the user sees an error message.
+
+**Auto-reply to sender** — fire-and-forget via `.catch()`. If it fails, the error is logged server-side but the user still sees success (they already got the owner's notification; not receiving a copy of their own message is non-critical).
+
+### 14.6 Discount System Removed
+
+Discount codes have been removed from every layer. `discount_amount` is hardcoded to `0` in the checkout and orders APIs and the column is kept in the DB schema for historical order records — it will always be `0` for new orders.
+
+If discounts are needed in a future version, the correct approach would be a proper `discount_codes` table with usage tracking, applied server-side only (never trust client-sent discount amounts).
+
+---
+
 ## 📝 DOCUMENT VERSION HISTORY
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | Jun 2026 | Auth flows (verify email, forgot/reset password), rate limiting, SEO metadata, Suspense fixes, stock management, discount removal, contact form error handling |
 | 1.0.0 | Feb 2026 | Initial complete documentation |
 
 ---
