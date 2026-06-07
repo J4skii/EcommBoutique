@@ -357,6 +357,55 @@ export default function AdminDashboard() {
   }
 
   // Product Management
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editProductForm, setEditProductForm] = useState({ name: "", price: "", stock_quantity: "" })
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product)
+    setEditProductForm({
+      name: product.name,
+      price: String(product.price),
+      stock_quantity: String(product.stock_quantity),
+    })
+  }
+
+  const handleSaveProduct = async () => {
+    if (!editingProduct) return
+    try {
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editProductForm.name,
+          price: Number(editProductForm.price),
+          stock_quantity: Number(editProductForm.stock_quantity),
+        }),
+      })
+      if (response.ok) {
+        setEditingProduct(null)
+        fetchData()
+      } else {
+        alert("Failed to update product")
+      }
+    } catch (error) {
+      alert("Failed to update product")
+    }
+  }
+
+  const handleDeleteProduct = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This will hide it from the store.`)) return
+    try {
+      const response = await fetch(`/api/products/${id}`, { method: "DELETE" })
+      if (response.ok) {
+        fetchData()
+      } else {
+        alert("Failed to delete product")
+      }
+    } catch (error) {
+      alert("Failed to delete product")
+    }
+  }
+
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setSubmitting(true)
@@ -521,11 +570,56 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Edit Product Inline Panel */}
+                  {editingProduct && (
+                    <div className="p-4 border-2 border-pink-300 rounded-lg bg-pink-50 mb-4 space-y-3">
+                      <h4 className="font-medium text-gray-800">Editing: {editingProduct.name}</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <Label className="text-xs">Name</Label>
+                          <Input
+                            value={editProductForm.name}
+                            onChange={(e) => setEditProductForm(p => ({ ...p, name: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Price (R)</Label>
+                          <Input
+                            type="number"
+                            value={editProductForm.price}
+                            onChange={(e) => setEditProductForm(p => ({ ...p, price: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Stock</Label>
+                          <Input
+                            type="number"
+                            value={editProductForm.stock_quantity}
+                            onChange={(e) => setEditProductForm(p => ({ ...p, stock_quantity: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="bg-pink-600 hover:bg-pink-700" onClick={handleSaveProduct}>
+                          <Check className="h-4 w-4 mr-1" /> Save Changes
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingProduct(null)}>
+                          <X className="h-4 w-4 mr-1" /> Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {products.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">No products yet. Add your first product!</p>
                   ) : (
                     products.map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={product.id}
+                        className={`flex items-center justify-between p-4 border rounded-lg ${
+                          !product.is_active ? "opacity-60 bg-gray-50" : ""
+                        } ${editingProduct?.id === product.id ? "border-pink-400" : ""}`}
+                      >
                         <div className="flex items-center gap-4">
                           <Image
                             src={product.image_url || "/placeholder.svg"}
@@ -535,7 +629,11 @@ export default function AdminDashboard() {
                             className="rounded-lg object-cover"
                           />
                           <div>
-                            <h3 className="font-medium">{product.name}</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">{product.name}</h3>
+                              {!product.is_active && <Badge variant="outline" className="text-xs">Hidden</Badge>}
+                              {product.is_featured && <Badge className="text-xs bg-pink-100 text-pink-700">Featured</Badge>}
+                            </div>
                             <p className="text-sm text-gray-600">R{product.price}</p>
                             {product.category_id && (
                               <p className="text-xs text-pink-600">
@@ -549,10 +647,21 @@ export default function AdminDashboard() {
                             {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : "Sold out"}
                           </Badge>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditProduct(product)}
+                              title="Edit product"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteProduct(product.id, product.name)}
+                              title="Delete product"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>

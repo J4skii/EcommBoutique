@@ -1,232 +1,134 @@
-import { RotateCcw, Shield, Clock, CheckCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { RotateCcw, CheckCircle, XCircle, Mail } from "lucide-react"
 import Link from "next/link"
 
 export default function ReturnsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-16">
-      <div className="container mx-auto max-w-6xl px-4">
+      <div className="container mx-auto max-w-4xl px-4">
         <div className="text-center mb-12">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-12 h-0.5 bg-pink-400"></div>
+            <span className="text-pink-600 font-medium text-sm tracking-wide uppercase">Returns Policy</span>
+            <div className="w-12 h-0.5 bg-pink-400"></div>
+          </div>
           <h1 className="text-3xl lg:text-4xl font-light text-gray-800 mb-4">
-            <span className="font-semibold text-pink-600">Returns</span> & Exchanges
+            Returns &amp; <span className="font-semibold text-pink-600">Exchanges</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Your satisfaction is our priority. We want you to love your Paiton's bow!
+            We want you to love your purchase. If you&apos;re not completely satisfied, here&apos;s how we can help.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card className="border-pink-100 text-center">
-            <CardHeader>
-              <div className="bg-pink-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <Clock className="h-6 w-6 text-pink-600" />
+        <div className="space-y-6">
+          <Card className="border-green-100 bg-green-50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                <h3 className="font-semibold text-gray-800 text-lg">30-Day Return Policy</h3>
               </div>
-              <CardTitle className="text-lg">30 Days</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">Return window for standard items</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-pink-100 text-center">
-            <CardHeader>
-              <div className="bg-blue-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <RotateCcw className="h-6 w-6 text-blue-600" />
-              </div>
-              <CardTitle className="text-lg">Easy Returns</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">Simple return process via email</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-pink-100 text-center">
-            <CardHeader>
-              <div className="bg-green-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <Shield className="h-6 w-6 text-green-600" />
-              </div>
-              <CardTitle className="text-lg">Quality Guarantee</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">Full refund for defective items</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-pink-100 text-center">
-            <CardHeader>
-              <div className="bg-purple-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <CheckCircle className="h-6 w-6 text-purple-600" />
-              </div>
-              <CardTitle className="text-lg">Fast Processing</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">Refunds within 5-7 business days</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          <Card className="border-pink-100">
-            <CardHeader>
-              <CardTitle>Return Policy</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-2">Standard Items</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• 30-day return window from delivery date</li>
-                  <li>• Items must be in original condition</li>
-                  <li>• Original packaging preferred</li>
-                  <li>• Full refund minus return shipping</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-2">Custom Orders</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Non-refundable unless defective</li>
-                  <li>• Quality issues covered 100%</li>
-                  <li>• Contact Paiton within 7 days</li>
-                  <li>• Photo evidence may be required</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-2">Exchanges</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Size exchanges available</li>
-                  <li>• Color exchanges subject to availability</li>
-                  <li>• Customer pays shipping both ways</li>
-                  <li>• Same item value only</li>
-                </ul>
-              </div>
+              <p className="text-gray-600">
+                We offer a <strong>30-day return policy</strong> on all standard items from the delivery date.
+              </p>
             </CardContent>
           </Card>
 
           <Card className="border-pink-100">
             <CardHeader>
-              <CardTitle>How to Return</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                <div className="bg-pink-100 p-2 rounded-xl">
+                  <CheckCircle className="h-5 w-5 text-pink-600" />
+                </div>
+                Items Eligible for Return
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="bg-pink-100 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-pink-600 flex-shrink-0">
-                    1
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Contact Us</h4>
-                    <p className="text-sm text-gray-600">
-                      Email hello@paitonsboutique.co.za with your order number and reason for return
-                    </p>
-                  </div>
-                </div>
+              <ul className="space-y-3 text-gray-600">
+                {[
+                  "Standard items in original, unworn condition with original packaging",
+                  "Items returned within 30 days of delivery",
+                  "Items that arrived damaged or defective (photos required)",
+                  "Incorrect items received",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
 
-                <div className="flex gap-3">
-                  <div className="bg-pink-100 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-pink-600 flex-shrink-0">
-                    2
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Get Return Label</h4>
-                    <p className="text-sm text-gray-600">We'll email you a return authorization and shipping label</p>
-                  </div>
+          <Card className="border-pink-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="bg-red-100 p-2 rounded-xl">
+                  <XCircle className="h-5 w-5 text-red-500" />
                 </div>
+                Non-Returnable Items
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3 text-gray-600">
+                {[
+                  "Custom orders (personalised or made-to-order items)",
+                  "Items that have been worn, used, or damaged by the customer",
+                  "Items returned after the 30-day window",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
 
-                <div className="flex gap-3">
-                  <div className="bg-pink-100 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-pink-600 flex-shrink-0">
-                    3
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Pack & Ship</h4>
-                    <p className="text-sm text-gray-600">Package the item securely and drop off at PostNet</p>
-                  </div>
+          <Card className="border-pink-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-xl">
+                  <RotateCcw className="h-5 w-5 text-blue-600" />
                 </div>
+                How to Return an Item
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="space-y-4 text-gray-600">
+                {[
+                  { step: "1", title: "Contact us first", desc: "Email hello@paitonsboutique.co.za with your order number and reason for return." },
+                  { step: "2", title: "Receive return authorisation", desc: "Paiton will confirm your return and provide instructions. Do not send items without authorisation." },
+                  { step: "3", title: "Package and ship", desc: "Pack the item securely in its original packaging. Return shipping is the customer's responsibility unless the item was defective." },
+                  { step: "4", title: "Refund processed", desc: "Once received and inspected, your refund will be processed within 5-7 business days to your original payment method." },
+                ].map(({ step, title, desc }) => (
+                  <li key={step} className="flex gap-3">
+                    <span className="bg-pink-100 text-pink-600 font-semibold w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0">{step}</span>
+                    <div>
+                      <p className="font-medium text-gray-800">{title}</p>
+                      <p className="text-sm">{desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
 
-                <div className="flex gap-3">
-                  <div className="bg-pink-100 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-pink-600 flex-shrink-0">
-                    4
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Get Refund</h4>
-                    <p className="text-sm text-gray-600">Refund processed within 5-7 business days of receipt</p>
-                  </div>
-                </div>
+          <Card className="border-pink-100">
+            <CardContent className="p-6 flex flex-wrap gap-4 items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">Need Help?</h3>
+                <p className="text-gray-600 text-sm">Contact Paiton directly for any return or exchange questions.</p>
               </div>
-
-              <div className="mt-6 p-4 bg-pink-50 rounded-lg">
-                <h4 className="font-semibold text-gray-800 mb-2">Need Help?</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Paiton is here to help! Contact us for any questions about returns or exchanges.
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" asChild className="bg-pink-600 hover:bg-pink-700">
-                    <Link href="/contact">Contact Paiton</Link>
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-pink-200 text-pink-600 bg-transparent">
-                    <Link href="mailto:hello@paitonsboutique.co.za">Email Us</Link>
-                  </Button>
-                </div>
-              </div>
+              <Button asChild className="bg-pink-600 hover:bg-pink-700">
+                <Link href="/contact">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Us
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
-
-        <Card className="border-pink-100 mt-8">
-          <CardHeader>
-            <CardTitle>Frequently Asked Questions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">Can I return a custom bow?</h4>
-                  <p className="text-sm text-gray-600">
-                    Custom orders are generally non-refundable unless there's a quality issue or the bow doesn't match
-                    the agreed specifications.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">Who pays for return shipping?</h4>
-                  <p className="text-sm text-gray-600">
-                    Customer pays return shipping unless the item is defective or we made an error.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">How long do refunds take?</h4>
-                  <p className="text-sm text-gray-600">
-                    Refunds are processed within 5-7 business days after we receive the returned item.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">Can I exchange for a different color?</h4>
-                  <p className="text-sm text-gray-600">
-                    Yes, subject to availability. You'll need to pay shipping both ways for exchanges.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">What if my bow arrives damaged?</h4>
-                  <p className="text-sm text-gray-600">
-                    Contact us immediately with photos. We'll arrange a replacement or full refund at no cost to you.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">Can I return after 30 days?</h4>
-                  <p className="text-sm text-gray-600">
-                    We may consider returns after 30 days on a case-by-case basis. Contact Paiton to discuss your
-                    situation.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

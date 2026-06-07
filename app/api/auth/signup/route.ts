@@ -1,8 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/database"
+import { sendVerificationEmail } from "@/app/api/auth/verify-email/route"
+import { rateLimit, getIP, rateLimitResponse } from "@/lib/rate-limit"
 import crypto from "crypto"
 
 export async function POST(request: NextRequest) {
+  // 5 signups per IP per hour
+  const ip = getIP(request)
+  const rl = rateLimit(`signup:${ip}`, 5, 60 * 60 * 1000)
+  if (!rl.ok) return rateLimitResponse(rl.resetAt)
+
   try {
     const body = await request.json()
     const { first_name, last_name, email, phone, password } = body
@@ -85,8 +92,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Send verification email if email was provided
+    const emailVerificationSent = false
+    if (customer.email) {
+      try {
+        await sendVerificationEmail(customer.id, customer.first_name, customer.email)
+      } catch (emailErr) {
+        console.error("Failed to send verification email:", emailErr)
+        // Don't fail signup if email fails
+      }
+    }
+
     return NextResponse.json({
       message: "Account created successfully",
+      emailVerificationSent: !!customer.email,
       customer: {
         id: customer.id,
         first_name: customer.first_name,

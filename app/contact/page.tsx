@@ -8,20 +8,43 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Phone, Mail, Clock, MessageCircle, Send } from "lucide-react"
+import { MapPin, Phone, Mail, Clock, MessageCircle, Send, CheckCircle } from "lucide-react"
 
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError(null)
+
+    const formData = new FormData(e.currentTarget)
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      alert("Message sent successfully! Paiton will get back to you within 24 hours.")
-    } catch (error) {
-      alert("Failed to send message. Please try again.")
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: formData.get("firstName"),
+          lastName: formData.get("lastName"),
+          email: formData.get("email"),
+          phone: formData.get("phone"),
+          subject: formData.get("subject"),
+          message: formData.get("message"),
+        }),
+      })
+
+      if (response.ok) {
+        setSubmitted(true)
+        ;(e.target as HTMLFormElement).reset()
+      } else {
+        const data = await response.json()
+        setError(data.error || "Failed to send message. Please try again.")
+      }
+    } catch (err) {
+      setError("Failed to send message. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -37,7 +60,7 @@ export default function ContactPage() {
             <div className="w-12 h-0.5 bg-pink-400"></div>
           </div>
           <h1 className="text-3xl lg:text-4xl font-light text-gray-800 mb-4">
-            Let's <span className="font-semibold text-pink-600">Connect</span>
+            Let&apos;s <span className="font-semibold text-pink-600">Connect</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Have questions about our bows or need a custom order? Paiton would love to hear from you!
@@ -88,7 +111,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-900 mb-1">hello@paitonsboutique.co.za</h3>
-                      <p className="text-gray-600">We'll reply within 24 hours</p>
+                      <p className="text-gray-600">We&apos;ll reply within 24 hours</p>
                       <p className="text-sm text-gray-500">For general inquiries</p>
                     </div>
                   </div>
@@ -104,7 +127,7 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-medium text-gray-900 mb-1">WhatsApp Orders</h3>
                       <p className="text-gray-600">+27 123 456 789</p>
-                      <p className="text-sm text-gray-500">Quick orders & custom requests</p>
+                      <p className="text-sm text-gray-500">Quick orders &amp; custom requests</p>
                     </div>
                   </div>
                 </CardContent>
@@ -140,77 +163,103 @@ export default function ContactPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {submitted ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-medium text-gray-800 mb-2">Message Sent!</h3>
+                    <p className="text-gray-600 mb-4">
+                      Thank you for reaching out! Paiton will get back to you within 24 hours.
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="border-pink-200 text-pink-600 bg-transparent"
+                      onClick={() => setSubmitted(false)}
+                    >
+                      Send Another Message
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && (
+                      <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{error}</div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="firstName">First Name</Label>
+                        <Input
+                          id="firstName"
+                          name="firstName"
+                          placeholder="Your first name"
+                          className="border-pink-200 focus:border-pink-400 rounded-xl"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input
+                          id="lastName"
+                          name="lastName"
+                          placeholder="Your last name"
+                          className="border-pink-200 focus:border-pink-400 rounded-xl"
+                        />
+                      </div>
+                    </div>
+
                     <div>
-                      <Label htmlFor="firstName">First Name</Label>
+                      <Label htmlFor="email">Email Address</Label>
                       <Input
-                        id="firstName"
-                        placeholder="Your first name"
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="your@email.com"
                         className="border-pink-200 focus:border-pink-400 rounded-xl"
                         required
                       />
                     </div>
+
                     <div>
-                      <Label htmlFor="lastName">Last Name</Label>
+                      <Label htmlFor="phone">Phone Number (Optional)</Label>
                       <Input
-                        id="lastName"
-                        placeholder="Your last name"
+                        id="phone"
+                        name="phone"
+                        placeholder="+27 123 456 789"
+                        className="border-pink-200 focus:border-pink-400 rounded-xl"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="subject">Subject</Label>
+                      <Input
+                        id="subject"
+                        name="subject"
+                        placeholder="What&apos;s this about?"
                         className="border-pink-200 focus:border-pink-400 rounded-xl"
                         required
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      className="border-pink-200 focus:border-pink-400 rounded-xl"
-                      required
-                    />
-                  </div>
+                    <div>
+                      <Label htmlFor="message">Message</Label>
+                      <Textarea
+                        id="message"
+                        name="message"
+                        placeholder="Tell Paiton what you&apos;re looking for or ask any questions..."
+                        rows={5}
+                        className="border-pink-200 focus:border-pink-400 rounded-xl"
+                        required
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="phone">Phone Number (Optional)</Label>
-                    <Input
-                      id="phone"
-                      placeholder="+27 123 456 789"
-                      className="border-pink-200 focus:border-pink-400 rounded-xl"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input
-                      id="subject"
-                      placeholder="What's this about?"
-                      className="border-pink-200 focus:border-pink-400 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="message">Message</Label>
-                    <Textarea
-                      id="message"
-                      placeholder="Tell Paiton what you're looking for or ask any questions..."
-                      rows={5}
-                      className="border-pink-200 focus:border-pink-400 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-pink-600 hover:bg-pink-700 rounded-xl py-3"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Sending..." : "Send Message to Paiton"}
-                  </Button>
-                </form>
+                    <Button
+                      type="submit"
+                      className="w-full bg-pink-600 hover:bg-pink-700 rounded-xl py-3"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Sending..." : "Send Message to Paiton"}
+                    </Button>
+                  </form>
+                )}
               </CardContent>
             </Card>
 
@@ -233,7 +282,7 @@ export default function ContactPage() {
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-800 mb-1">Can I return a bow if I'm not happy?</h4>
+                  <h4 className="font-medium text-gray-800 mb-1">Can I return a bow if I&apos;m not happy?</h4>
                   <p className="text-sm text-gray-600">We offer a 30-day return policy for all standard items.</p>
                 </div>
                 <div>

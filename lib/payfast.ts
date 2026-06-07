@@ -44,7 +44,12 @@ export class PayFastService {
     this.sandbox = process.env.NODE_ENV !== "production"
 
     if (!this.merchantId || !this.merchantKey) {
-      throw new Error("PayFast credentials not configured: PAYFAST_MERCHANT_ID and PAYFAST_MERCHANT_KEY are required")
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("PayFast credentials not configured")
+      }
+      // In development/build, use placeholder values to allow build to succeed
+      this.merchantId = this.merchantId || "10000100"
+      this.merchantKey = this.merchantKey || "placeholder_key"
     }
   }
 

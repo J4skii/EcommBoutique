@@ -27,11 +27,10 @@ export default function AdminLoginPage() {
       })
 
       if (response.ok) {
-        const data = await response.json()
-        document.cookie = `admin_session=admin_${data.token}; path=/; max-age=86400; secure; samesite=strict`
         router.push("/admin")
       } else {
-        setError("Invalid credentials")
+        const data = await response.json().catch(() => ({}))
+        setError(data.error || "Invalid credentials")
       }
     } catch (err) {
       setError("Login failed. Please try again.")

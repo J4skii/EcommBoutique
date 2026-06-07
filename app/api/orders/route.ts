@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/database"
+import { supabase, supabaseAdmin } from "@/lib/database"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
   const limit = searchParams.get("limit")
   const customer_id = searchParams.get("customer_id")
   const customer_email = searchParams.get("customer_email")
+  const email = searchParams.get("email")
+  const orderNumber = searchParams.get("order_number")
 
   try {
     let query = supabase
@@ -32,6 +34,14 @@ export async function GET(request: NextRequest) {
       query = query.eq("customer_email", customer_email)
     }
 
+    if (email) {
+      query = query.eq("customer_email", email)
+    }
+
+    if (orderNumber) {
+      query = query.eq("order_number", orderNumber)
+    }
+
     if (limit) {
       query = query.limit(Number.parseInt(limit))
     }
@@ -53,8 +63,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { customer_email, customer_phone, items, shipping_address, billing_address, payment_method, discount_code } =
-      body
+    const { customer_email, customer_phone, items, shipping_address, billing_address, payment_method } = body
 
     // Generate order number
     const orderNumber = `MON-${Date.now()}`
@@ -65,31 +74,11 @@ export async function POST(request: NextRequest) {
       subtotal += item.unit_price * item.quantity
     }
 
-    const shipping_cost = subtotal >= 300 ? 0 : 50 // Free shipping over R300
-    const tax_amount = 0 // No VAT for small business
-    let discount_amount = 0
+    const shipping_cost = subtotal >= 300 ? 0 : 50
+    const tax_amount = 0
+    const discount_amount = 0
 
-    // Apply discount code if provided
-    if (discount_code) {
-      const { data: discount } = await supabase
-        .from("discount_codes")
-        .select("*")
-        .eq("code", discount_code)
-        .eq("is_active", true)
-        .single()
-
-      if (discount) {
-        if (discount.type === "percentage") {
-          discount_amount = (subtotal * discount.value) / 100
-        } else if (discount.type === "fixed_amount") {
-          discount_amount = discount.value
-        } else if (discount.type === "free_shipping") {
-          // Free shipping already handled above
-        }
-      }
-    }
-
-    const total_amount = subtotal + shipping_cost + tax_amount - discount_amount
+    const total_amount = subtotal + shipping_cost + tax_amount
 
     // Create order
     const { data: order, error: orderError } = await supabase

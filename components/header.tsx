@@ -4,17 +4,17 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { 
-  Sparkles, 
-  Menu, 
-  ShoppingCart, 
-  User, 
-  Search, 
-  Heart, 
-  Loader2, 
+import {
+  Sparkles,
+  Menu,
+  ShoppingCart,
+  User,
+  Search,
+  Heart,
+  Loader2,
   LogOut,
   ChevronDown,
-  Package
+  Package,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface Category {
   id: string
@@ -30,31 +31,31 @@ interface Category {
   slug: string
 }
 
-// Get customer ID from localStorage
 const getCustomerId = () => {
   if (typeof window === "undefined") return null
   return localStorage.getItem("customer_id")
 }
 
-// Get customer name
 const getCustomerName = () => {
   if (typeof window === "undefined") return null
   return localStorage.getItem("customer_name")
 }
 
-// Check if logged in
 const isLoggedIn = () => {
   if (typeof window === "undefined") return false
   return !!localStorage.getItem("customer_token")
 }
 
 export function Header() {
+  const router = useRouter()
   const [cartItems, setCartItems] = useState(0)
-  const [wishlistItems] = useState(0)
+  const [wishlistCount, setWishlistCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loggedIn, setLoggedIn] = useState(false)
   const [customerName, setCustomerName] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const fetchCartCount = async () => {
     const customerId = getCustomerId()
@@ -74,6 +75,21 @@ export function Header() {
       console.error("Error fetching cart:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchWishlistCount = async () => {
+    const customerId = getCustomerId()
+    if (!customerId) return
+
+    try {
+      const response = await fetch(`/api/wishlist?customerId=${customerId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setWishlistCount(data.wishlistItems?.length || 0)
+      }
+    } catch (error) {
+      console.error("Error fetching wishlist:", error)
     }
   }
 
@@ -103,23 +119,40 @@ export function Header() {
     setLoggedIn(false)
     setCustomerName(null)
     setCartItems(0)
+    setWishlistCount(0)
     window.dispatchEvent(new Event("auth-changed"))
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    } else {
+      router.push("/search")
+    }
   }
 
   useEffect(() => {
     checkAuth()
     fetchCartCount()
+    fetchWishlistCount()
     fetchCategories()
 
-    // Listen for auth and cart changes
     const handleCartUpdate = () => fetchCartCount()
-    const handleAuthChange = () => checkAuth()
-    
+    const handleWishlistUpdate = () => fetchWishlistCount()
+    const handleAuthChange = () => {
+      checkAuth()
+      fetchCartCount()
+      fetchWishlistCount()
+    }
+
     window.addEventListener("cart-updated", handleCartUpdate)
+    window.addEventListener("wishlist-updated", handleWishlistUpdate)
     window.addEventListener("auth-changed", handleAuthChange)
 
     return () => {
       window.removeEventListener("cart-updated", handleCartUpdate)
+      window.removeEventListener("wishlist-updated", handleWishlistUpdate)
       window.removeEventListener("auth-changed", handleAuthChange)
     }
   }, [])
@@ -129,7 +162,7 @@ export function Header() {
       {/* Announcement Bar */}
       <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-center py-2 px-4">
         <p className="text-sm font-medium">
-          🎉 Free shipping on orders over R300 | Use code: PAITON20 for 20% off your first order
+          Free shipping on orders over R300 | Use code: <strong>PAITON20</strong> for 20% off your first order
         </p>
       </div>
 
@@ -152,8 +185,7 @@ export function Header() {
               <Link href="/" className="text-gray-600 hover:text-pink-600 transition-colors font-medium">
                 Home
               </Link>
-              
-              {/* Categories Dropdown */}
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors font-medium">
@@ -170,10 +202,7 @@ export function Header() {
                   </DropdownMenuItem>
                   {categories.map((category) => (
                     <DropdownMenuItem key={category.id} asChild>
-                      <Link 
-                        href={`/products?category=${category.slug}`} 
-                        className="cursor-pointer"
-                      >
+                      <Link href={`/products?category=${category.slug}`} className="cursor-pointer">
                         {category.name}
                       </Link>
                     </DropdownMenuItem>
@@ -185,7 +214,7 @@ export function Header() {
                 Custom Orders
               </Link>
               <Link href="/about" className="text-gray-600 hover:text-pink-600 transition-colors font-medium">
-                About Paiton
+                About
               </Link>
               <Link href="/contact" className="text-gray-600 hover:text-pink-600 transition-colors font-medium">
                 Contact
@@ -194,21 +223,38 @@ export function Header() {
 
             {/* Actions */}
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-pink-50">
-                <Search className="h-5 w-5 text-gray-600" />
-              </Button>
+              {/* Search */}
+              <form onSubmit={handleSearch} className="hidden sm:flex items-center">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="w-0 overflow-hidden opacity-0 focus:w-32 focus:opacity-100 transition-all duration-300 border border-pink-200 rounded-full px-3 py-1 text-sm outline-none focus:ring-1 focus:ring-pink-300"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-pink-600 transition-colors"
+                  >
+                    <Search className="h-5 w-5" />
+                  </button>
+                </div>
+              </form>
 
+              {/* Wishlist */}
               <Button variant="ghost" size="icon" className="relative hover:bg-pink-50" asChild>
                 <Link href="/wishlist">
                   <Heart className="h-5 w-5 text-gray-600" />
-                  {wishlistItems > 0 && (
+                  {wishlistCount > 0 && (
                     <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-pink-600 text-white text-xs">
-                      {wishlistItems}
+                      {wishlistCount}
                     </Badge>
                   )}
                 </Link>
               </Button>
 
+              {/* Cart */}
               <Button variant="ghost" size="icon" className="relative hover:bg-pink-50" asChild>
                 <Link href="/cart">
                   <ShoppingCart className="h-5 w-5 text-gray-600" />
@@ -222,14 +268,13 @@ export function Header() {
                 </Link>
               </Button>
 
+              {/* User / Auth */}
               {loggedIn ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 hidden lg:block">
-                    Hi, {customerName?.split(" ")[0]}
-                  </span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <span className="text-sm text-gray-600 hidden lg:block">Hi, {customerName?.split(" ")[0]}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="hover:bg-pink-50"
                     onClick={handleLogout}
                     title="Logout"
@@ -246,7 +291,7 @@ export function Header() {
               )}
 
               {/* Mobile Menu */}
-              <Sheet>
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="md:hidden hover:bg-pink-50">
                     <Menu className="h-5 w-5 text-gray-600" />
@@ -254,20 +299,34 @@ export function Header() {
                 </SheetTrigger>
                 <SheetContent side="right" className="bg-white">
                   <nav className="flex flex-col gap-6 mt-8">
-                    <Link href="/" className="text-lg font-medium text-gray-700 hover:text-pink-600">
+                    {/* Mobile search */}
+                    <form onSubmit={(e) => { handleSearch(e); setMobileMenuOpen(false) }} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search bows..."
+                        className="flex-1 border border-pink-200 rounded-full px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-pink-300"
+                      />
+                      <Button type="submit" size="sm" className="bg-pink-600 hover:bg-pink-700 rounded-full">
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </form>
+
+                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-gray-700 hover:text-pink-600">
                       Home
                     </Link>
-                    
-                    {/* Mobile Categories */}
+
                     <div className="border-l-2 border-pink-200 pl-4 space-y-3">
                       <p className="text-sm text-gray-500 font-medium">Shop by Category</p>
-                      <Link href="/products" className="block text-gray-700 hover:text-pink-600">
+                      <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-pink-600">
                         All Products
                       </Link>
                       {categories.map((category) => (
-                        <Link 
+                        <Link
                           key={category.id}
-                          href={`/products?category=${category.slug}`} 
+                          href={`/products?category=${category.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
                           className="block text-gray-700 hover:text-pink-600"
                         >
                           {category.name}
@@ -275,38 +334,34 @@ export function Header() {
                       ))}
                     </div>
 
-                    <Link href="/custom-orders" className="text-lg font-medium text-gray-700 hover:text-pink-600">
+                    <Link href="/custom-orders" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-gray-700 hover:text-pink-600">
                       Custom Orders
                     </Link>
-                    <Link href="/about" className="text-lg font-medium text-gray-700 hover:text-pink-600">
-                      About Paiton
+                    <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-gray-700 hover:text-pink-600">
+                      About
                     </Link>
-                    <Link href="/contact" className="text-lg font-medium text-gray-700 hover:text-pink-600">
+                    <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-gray-700 hover:text-pink-600">
                       Contact
                     </Link>
-                    
+
                     {loggedIn ? (
                       <>
                         <div className="border-t pt-4 mt-4">
                           <p className="text-sm text-gray-500 mb-2">Signed in as</p>
                           <p className="font-medium text-gray-800">{customerName}</p>
                         </div>
-                        <button 
-                          onClick={handleLogout}
+                        <button
+                          onClick={() => { handleLogout(); setMobileMenuOpen(false) }}
                           className="text-lg font-medium text-red-600 hover:text-red-700 text-left"
                         >
                           Logout
                         </button>
                       </>
                     ) : (
-                      <Link href="/auth/login" className="text-lg font-medium text-pink-600 border-t pt-4 mt-4">
+                      <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-pink-600 border-t pt-4 mt-4">
                         Sign In / Register
                       </Link>
                     )}
-                    
-                    <Link href="/admin" className="text-lg font-medium text-gray-500 border-t pt-4">
-                      Admin Dashboard
-                    </Link>
                   </nav>
                 </SheetContent>
               </Sheet>

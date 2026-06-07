@@ -1,9 +1,10 @@
 import { Resend } from "resend"
 import { supabase } from "./database"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const getResend = () => new Resend(process.env.RESEND_API_KEY || "missing_key")
 
 export async function sendOrderConfirmationEmail(orderId: string) {
+  const resend = getResend()
   try {
     // Get order details
     const { data: order, error } = await supabase
@@ -89,17 +90,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
                 `
                     : ""
                 }
-                ${
-                  order.discount_amount > 0
-                    ? `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #059669;">
-                  <span>Discount:</span>
-                  <span>-R${order.discount_amount}</span>
-                </div>
-                `
-                    : ""
-                }
-                <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; border-top: 2px solid #ec4899; padding-top: 10px;">
+<div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; border-top: 2px solid #ec4899; padding-top: 10px;">
                   <span>Total:</span>
                   <span>R${order.total_amount}</span>
                 </div>
@@ -158,6 +149,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
 }
 
 export async function sendCustomOrderNotification(customOrderId: string) {
+  const resend = getResend()
   try {
     const { data: customOrder, error } = await supabase
       .from("custom_order_requests")
@@ -218,6 +210,7 @@ export async function sendCustomOrderNotification(customOrderId: string) {
 }
 
 export async function sendNewsletterWelcome(email: string, firstName?: string) {
+  const resend = getResend()
   try {
     await resend.emails.send({
       from: "Paitons Boutique <hello@paitonsboutique.co.za>",

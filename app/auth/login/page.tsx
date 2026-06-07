@@ -158,13 +158,18 @@ export default function CustomerLoginPage() {
                     required
                   />
                 </div>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-pink-600 hover:bg-pink-700"
                   disabled={isLoading}
                 >
                   {isLoading ? "Signing in..." : "Sign In with Phone"}
                 </Button>
+                <div className="text-center">
+                  <Link href="/contact" className="text-xs text-gray-400 hover:text-pink-600">
+                    Phone-only account? Contact us to reset
+                  </Link>
+                </div>
               </form>
             </TabsContent>
 
@@ -191,13 +196,21 @@ export default function CustomerLoginPage() {
                     required
                   />
                 </div>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-pink-600 hover:bg-pink-700"
                   disabled={isLoading}
                 >
                   {isLoading ? "Signing in..." : "Sign In with Email"}
                 </Button>
+                <div className="text-center">
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-xs text-gray-500 hover:text-pink-600"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
               </form>
             </TabsContent>
           </Tabs>

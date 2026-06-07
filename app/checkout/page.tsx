@@ -95,6 +95,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer_email: formData.get("email"),
           customer_phone: formData.get("phone"),
+          customer_id: getCustomerId(),
           items: cartItems.map(item => ({
             product_id: item.product_id,
             name: item.name,

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/database"
+import { supabase, supabaseAdmin } from "@/lib/database"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -8,6 +8,12 @@ export async function GET(request: NextRequest) {
   const categoryId = searchParams.get("categoryId")
   const limit = searchParams.get("limit")
   const search = searchParams.get("search")
+  const includeInactive = searchParams.get("includeInactive")
+
+  // Only allow includeInactive if admin session cookie is present
+  const isAdmin =
+    includeInactive === "true" &&
+    !!request.cookies.get("admin_session")?.value?.startsWith("admin_")
 
   try {
     let query = supabase
@@ -16,30 +22,28 @@ export async function GET(request: NextRequest) {
         *,
         category:categories(id, name, slug)
       `)
-      .eq("is_active", true)
       .order("created_at", { ascending: false })
+
+    if (!isAdmin) {
+      query = query.eq("is_active", true)
+    }
 
     if (featured === "true") {
       query = query.eq("is_featured", true)
     }
 
-    // Filter by category ID (new way)
     if (categoryId) {
       query = query.eq("category_id", categoryId)
-    }
-    // Filter by category slug/name (fallback)
-    else if (category) {
-      // Try to find category first
+    } else if (category) {
       const { data: catData } = await supabase
         .from("categories")
         .select("id")
         .or(`slug.eq.${category},name.ilike.${category}`)
         .single()
-      
+
       if (catData) {
         query = query.eq("category_id", catData.id)
       } else {
-        // Fallback to old category column
         query = query.eq("category", category)
       }
     }
@@ -69,41 +73,42 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { 
-      name, 
-      description, 
-      price, 
-      stock_quantity, 
-      colors, 
-      sizes, 
-      is_featured, 
-      image_url, 
+    const {
+      name,
+      description,
+      price,
+      stock_quantity,
+      colors,
+      sizes,
+      is_featured,
+      image_url,
       weight_grams,
       category_id,
-      category 
+      category,
     } = body
 
-    // Generate SKU
-    const sku = `BOW-${name.toUpperCase().replace(/\s+/g, "-")}-${Date.now().toString().slice(-3)}`
+    if (!name || price === undefined) {
+      return NextResponse.json({ error: "Name and price are required" }, { status: 400 })
+    }
 
-    // Prepare insert data
+    const sku = `BOW-${name.toUpperCase().replace(/\s+/g, "-")}-${Date.now().toString().slice(-4)}`
+
     const insertData: any = {
       name,
       description,
       price: Number.parseFloat(price),
-      stock_quantity: Number.parseInt(stock_quantity),
+      stock_quantity: Number.parseInt(stock_quantity) || 0,
       colors,
       sizes,
       is_featured: is_featured || false,
       image_url,
       sku,
       weight_grams: weight_grams ? Number.parseInt(weight_grams) : null,
+      is_active: true,
     }
 
-    // Handle category
     if (category_id) {
       insertData.category_id = category_id
-      // Also get category name for backwards compatibility
       const { data: catData } = await supabase
         .from("categories")
         .select("name")
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
       insertData.category = category
     }
 
-    const { data: product, error } = await supabase
+    const { data: product, error } = await supabaseAdmin
       .from("products")
       .insert(insertData)
       .select()

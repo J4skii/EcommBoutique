@@ -82,10 +82,14 @@ export default function CustomerSignupPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess("Account created successfully! Redirecting to login...")
-        setTimeout(() => {
-          router.push("/auth/login")
-        }, 2000)
+        if (data.emailVerificationSent) {
+          setSuccess(
+            `Account created! We've sent a verification email to ${formData.email}. Please check your inbox and click the link to verify your account.`
+          )
+        } else {
+          setSuccess("Account created successfully! Redirecting to login...")
+          setTimeout(() => router.push("/auth/login"), 2000)
+        }
       } else {
         setError(data.error || "Failed to create account")
       }

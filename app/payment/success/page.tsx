@@ -1,11 +1,11 @@
 "use client"
 
+import { Suspense, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, Clock, Package, Mail, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Suspense, useEffect, useState } from "react"
 
 interface OrderStatus {
   order_number: string
@@ -92,6 +92,21 @@ function PaymentSuccessContent() {
         }
       }
 
+      // Clear only the cart items, NOT the customer identity
+      const customerId = localStorage.getItem("customer_id")
+      if (customerId) {
+        fetch("/api/cart", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customer_id: customerId }),
+        }).catch(() => {
+          // Silently fail — cart will be stale but customer keeps their account
+        })
+      }
+
+      // Notify header to update cart count
+      window.dispatchEvent(new Event("cart-updated"))
+
       setLoading(false)
     }
 
@@ -139,7 +154,7 @@ function PaymentSuccessContent() {
                   Payment <span className="font-semibold text-pink-600">Successful!</span>
                 </h1>
                 <p className="text-gray-600 mb-6">
-                  Thank you for your order! We've received your payment and Paiton is already preparing your beautiful bows.
+                  Thank you for your order! We&apos;ve received your payment and Paiton is already preparing your beautiful bows.
                 </p>
               </>
             ) : (
@@ -203,9 +218,10 @@ function PaymentSuccessContent() {
               <div className="flex items-start gap-3">
                 <Package className="h-5 w-5 text-pink-600 mt-0.5" />
                 <div>
-                  <p className="font-medium text-gray-800">What's Next?</p>
+                  <p className="font-medium text-gray-800">What&apos;s Next?</p>
                   <p className="text-sm text-gray-600">
-                    Paiton will craft your order within 5-7 business days. You'll receive tracking information once your order ships.
+                    Paiton will craft your order within 5-7 business days. You&apos;ll receive tracking information once your
+                    order ships.
                   </p>
                 </div>
               </div>
@@ -215,7 +231,11 @@ function PaymentSuccessContent() {
               <Button asChild className="bg-pink-600 hover:bg-pink-700 rounded-full px-8">
                 <Link href="/products">Continue Shopping</Link>
               </Button>
-              <Button asChild variant="outline" className="rounded-full px-8 border-pink-200 text-pink-700 bg-transparent">
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-full px-8 border-pink-200 text-pink-700 bg-transparent"
+              >
                 <Link href="/orders">View My Orders</Link>
               </Button>
             </div>

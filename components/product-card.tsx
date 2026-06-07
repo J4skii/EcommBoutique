@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, ShoppingCart, Check, Loader2 } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import { useState, useEffect } from "react"
 
 interface Product {
@@ -21,7 +22,6 @@ interface ProductCardProps {
   product: Product
 }
 
-// Generate or get customer ID
 const getCustomerId = () => {
   if (typeof window === "undefined") return null
   let customerId = localStorage.getItem("customer_id")
@@ -36,35 +36,20 @@ export function ProductCard({ product }: ProductCardProps) {
   const [isLiked, setIsLiked] = useState(false)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [isLoadingWishlist, setIsLoadingWishlist] = useState(true)
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false)
 
-  // Check if product is in wishlist on mount
   useEffect(() => {
-    const checkWishlist = async () => {
-      const customerId = getCustomerId()
-      if (!customerId) {
-        setIsLoadingWishlist(false)
-        return
-      }
+    // Check if product is already wishlisted
+    const customerId = getCustomerId()
+    if (!customerId) return
 
-      try {
-        const response = await fetch(`/api/wishlist?customer_id=${customerId}`)
-        const data = await response.json()
-
-        if (response.ok && data.wishlistItems) {
-          const isInWishlist = data.wishlistItems.some(
-            (item: any) => item.product_id === product.id || item.products?.id === product.id
-          )
-          setIsLiked(isInWishlist)
-        }
-      } catch (error) {
-        console.error("Error checking wishlist:", error)
-      } finally {
-        setIsLoadingWishlist(false)
-      }
-    }
-
-    checkWishlist()
+    fetch(`/api/wishlist?customerId=${customerId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const inWishlist = (data.wishlistItems || data.data)?.some((item: any) => item.product_id === product.id)
+        setIsLiked(!!inWishlist)
+      })
+      .catch(() => {})
   }, [product.id])
 
   const handleAddToCart = async () => {
@@ -88,8 +73,6 @@ export function ProductCard({ product }: ProductCardProps) {
       if (response.ok) {
         setShowSuccess(true)
         setTimeout(() => setShowSuccess(false), 2000)
-
-        // Dispatch event to update cart count in header
         window.dispatchEvent(new Event("cart-updated"))
       } else {
         const error = await response.json()
@@ -103,37 +86,40 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   }
 
-  const handleToggleWishlist = async () => {
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
     const customerId = getCustomerId()
-    if (!customerId) {
-      alert("Please log in to save items to your wishlist")
-      return
-    }
+    if (!customerId) return
 
-    // Optimistic update
-    const wasLiked = isLiked
-    setIsLiked(!isLiked)
-
+    setIsTogglingWishlist(true)
     try {
-      if (wasLiked) {
-        // Remove from wishlist
-        await fetch("/api/wishlist", {
+      if (isLiked) {
+        const response = await fetch("/api/wishlist", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ customer_id: customerId, product_id: product.id })
+          body: JSON.stringify({ product_id: product.id, customer_id: customerId }),
         })
+        if (response.ok) {
+          setIsLiked(false)
+          window.dispatchEvent(new Event("wishlist-updated"))
+        }
       } else {
-        // Add to wishlist
-        await fetch("/api/wishlist", {
+        const response = await fetch("/api/wishlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ customer_id: customerId, product_id: product.id })
+          body: JSON.stringify({ product_id: product.id, customer_id: customerId }),
         })
+        if (response.ok) {
+          setIsLiked(true)
+          window.dispatchEvent(new Event("wishlist-updated"))
+        }
       }
     } catch (error) {
-      console.error("Wishlist error:", error)
-      // Revert on error
-      setIsLiked(wasLiked)
+      console.error("Failed to toggle wishlist:", error)
+    } finally {
+      setIsTogglingWishlist(false)
     }
   }
 
@@ -141,41 +127,46 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
-      <div className="relative aspect-square overflow-hidden">
-        <Image
-          src={product.image_url || "/placeholder.svg?height=300&width=300"}
-          alt={product.name}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <button
-          onClick={handleToggleWishlist}
-          disabled={isLoadingWishlist}
-          className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors disabled:opacity-50"
-        >
-          {isLoadingWishlist ? (
-            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-          ) : (
-            <Heart className={`h-4 w-4 ${isLiked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
+      <Link href={`/products/${product.id}`}>
+        <div className="relative aspect-square overflow-hidden">
+          <Image
+            src={product.image_url || "/placeholder.svg?height=300&width=300"}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <button
+            onClick={handleToggleWishlist}
+            className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+            disabled={isTogglingWishlist}
+          >
+            {isTogglingWishlist ? (
+              <Loader2 className="h-4 w-4 animate-spin text-pink-400" />
+            ) : (
+              <Heart className={`h-4 w-4 ${isLiked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
+            )}
+          </button>
+          {!inStock && (
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+              <Badge className="bg-white/90 text-gray-700 backdrop-blur-sm">Sold Out</Badge>
+            </div>
           )}
-        </button>
-        {!inStock && (
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-            <Badge className="bg-white/90 text-gray-700 backdrop-blur-sm">Sold Out</Badge>
-          </div>
-        )}
-        {product.stock_quantity <= 3 && product.stock_quantity > 0 && (
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-orange-500 text-white">Only {product.stock_quantity} left!</Badge>
-          </div>
-        )}
-      </div>
+          {product.stock_quantity <= 3 && product.stock_quantity > 0 && (
+            <div className="absolute top-3 left-3">
+              <Badge className="bg-orange-500 text-white">Only {product.stock_quantity} left!</Badge>
+            </div>
+          )}
+        </div>
+      </Link>
 
       <div className="p-5">
-        <h3 className="font-medium text-gray-800 mb-2 text-lg">{product.name}</h3>
+        <Link href={`/products/${product.id}`}>
+          <h3 className="font-medium text-gray-800 mb-2 text-lg hover:text-pink-600 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
         <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{product.description}</p>
 
-        {/* Colors */}
         {product.colors && product.colors.length > 0 && (
           <div className="flex gap-1 mb-3">
             {product.colors.slice(0, 4).map((color, index) => (
@@ -195,10 +186,9 @@ export function ProductCard({ product }: ProductCardProps) {
           {inStock ? (
             <Button
               size="sm"
-              className={`rounded-full px-4 transition-all ${showSuccess
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-pink-600 hover:bg-pink-700"
-                }`}
+              className={`rounded-full px-4 transition-all ${
+                showSuccess ? "bg-green-600 hover:bg-green-700" : "bg-pink-600 hover:bg-pink-700"
+              }`}
               onClick={handleAddToCart}
               disabled={isAddingToCart || showSuccess}
             >

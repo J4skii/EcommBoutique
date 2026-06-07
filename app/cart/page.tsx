@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard, Loader2 } from "lucide-react"
@@ -36,9 +35,6 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
-  const [discountCode, setDiscountCode] = useState("")
-  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null)
-
   useEffect(() => {
     fetchCart()
   }, [])
@@ -112,35 +108,24 @@ export default function CartPage() {
 
   const removeItem = async (id: string) => {
     try {
-      // Note: You'll need to create a DELETE endpoint for cart items
-      // For now, we'll just update the UI
-      setCartItems((items) => items.filter((item) => item.id !== id))
-      window.dispatchEvent(new Event("cart-updated"))
+      const customerId = getCustomerId()
+      const response = await fetch("/api/cart", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, customer_id: customerId }),
+      })
+      if (response.ok) {
+        setCartItems((items) => items.filter((item) => item.id !== id))
+        window.dispatchEvent(new Event("cart-updated"))
+      }
     } catch (error) {
       console.error("Error removing item:", error)
     }
   }
 
-  const applyDiscount = () => {
-    const validCodes: Record<string, { amount: number; type: string }> = {
-      PAITON20: { amount: 20, type: "percentage" },
-      WELCOME10: { amount: 10, type: "percentage" },
-      FREESHIP300: { amount: 50, type: "fixed" },
-    }
-
-    const discount = validCodes[discountCode.toUpperCase()]
-    if (discount) {
-      const discountAmount = discount.type === "percentage" ? (subtotal * discount.amount) / 100 : discount.amount
-      setAppliedDiscount({ code: discountCode.toUpperCase(), amount: discountAmount })
-    } else {
-      alert("Invalid discount code")
-    }
-  }
-
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const discountAmount = appliedDiscount?.amount || 0
   const shippingCost = subtotal >= 300 ? 0 : 50
-  const total = subtotal - discountAmount + shippingCost
+  const total = subtotal + shippingCost
 
   if (loading) {
     return (
@@ -260,43 +245,12 @@ export default function CartPage() {
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Discount Code */}
-                <div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Discount code"
-                      value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value)}
-                      className="border-pink-200"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={applyDiscount}
-                      className="border-pink-200 text-pink-600 bg-transparent"
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                  {appliedDiscount && (
-                    <div className="mt-2 text-sm text-green-600">
-                      ✓ {appliedDiscount.code} applied (-R{appliedDiscount.amount.toFixed(2)})
-                    </div>
-                  )}
-                </div>
-
                 {/* Price Breakdown */}
-                <div className="space-y-2 pt-4 border-t">
+                <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>R{subtotal.toFixed(2)}</span>
                   </div>
-
-                  {appliedDiscount && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Discount ({appliedDiscount.code})</span>
-                      <span>-R{appliedDiscount.amount.toFixed(2)}</span>
-                    </div>
-                  )}
 
                   <div className="flex justify-between">
                     <span>Shipping</span>

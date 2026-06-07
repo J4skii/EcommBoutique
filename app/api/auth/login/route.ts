@@ -1,8 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/database"
+import { rateLimit, getIP, rateLimitResponse } from "@/lib/rate-limit"
 import crypto from "crypto"
 
 export async function POST(request: NextRequest) {
+  // 10 attempts per IP per 15 minutes
+  const ip = getIP(request)
+  const rl = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)
+  if (!rl.ok) return rateLimitResponse(rl.resetAt)
+
   try {
     const body = await request.json()
     const { email, phone, password } = body
